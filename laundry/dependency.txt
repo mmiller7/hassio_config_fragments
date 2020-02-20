@@ -1,1 +1,2 @@
+Global variables addon:
 https://github.com/rogro82/hass-variables
