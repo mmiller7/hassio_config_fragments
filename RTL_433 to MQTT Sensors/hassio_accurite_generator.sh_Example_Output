@@ -1,0 +1,86 @@
+
+# Sensor Package File
+
+# Temperature and Humidity Reading Sensors
+sensor:
+
+  # Example One Sensor
+  - platform: mqtt
+    name: "Example One Temperature"
+    unique_id: "example_one_temperature"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/1234"
+    unit_of_measurement: '°C'
+    value_template: >-
+      {% if value_json.temperature_C > -20 or value_json.temperature_C < 100 %}
+        {{ value_json.temperature_C }}
+      {% else %}
+        {{ states.sensor.example_one_temperature.state }}
+      {% endif %}
+  - platform: mqtt
+    name: "Example One Humidity"
+    unique_id: "example_one_humidity"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/1234"
+    unit_of_measurement: '%'
+    value_template: >-
+      {% if value_json.humidity >= 0 or value_json.humidity <= 100 %}
+        {{ value_json.humidity }}
+      {% else %}
+        {{ states.sensor.example_one_humidity.state }}
+      {% endif %}
+
+  # Example Two Sensor
+  - platform: mqtt
+    name: "Example Two Temperature"
+    unique_id: "example_two_temperature"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/5678"
+    unit_of_measurement: '°C'
+    value_template: >-
+      {% if value_json.temperature_C > -20 or value_json.temperature_C < 100 %}
+        {{ value_json.temperature_C }}
+      {% else %}
+        {{ states.sensor.example_two_temperature.state }}
+      {% endif %}
+  - platform: mqtt
+    name: "Example Two Humidity"
+    unique_id: "example_two_humidity"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/5678"
+    unit_of_measurement: '%'
+    value_template: >-
+      {% if value_json.humidity >= 0 or value_json.humidity <= 100 %}
+        {{ value_json.humidity }}
+      {% else %}
+        {{ states.sensor.example_two_humidity.state }}
+      {% endif %}
+
+
+
+# Battery Low Warning Sensors
+binary_sensor:
+
+  # Example One Sensor
+  - platform: mqtt
+    name: "Example One Sensor Battery Low"
+    unique_id: "example_one_sensor_battery_low"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/1234"
+    payload_on: "1"
+    payload_off: "0"
+    value_template: >-
+      {% if value_json.battery_low == 0 or value_json.battery_low == 1 %}
+        {{ value_json.battery_low }}
+      {% else %}
+        {{ states.sensor.example_one_battery_low.state }}
+      {% endif %}
+
+  # Example Two Sensor
+  - platform: mqtt
+    name: "Example Two Sensor Battery Low"
+    unique_id: "example_two_sensor_battery_low"
+    state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/5678"
+    payload_on: "1"
+    payload_off: "0"
+    value_template: >-
+      {% if value_json.battery_low == 0 or value_json.battery_low == 1 %}
+        {{ value_json.battery_low }}
+      {% else %}
+        {{ states.sensor.example_two_battery_low.state }}
+      {% endif %}
