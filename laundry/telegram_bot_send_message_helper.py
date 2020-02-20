@@ -1,4 +1,5 @@
 # Filename: telegram_bot_send_message_helper.py
+# Place this file in /config/python_scripts/
 # 
 # Source:
 # https://community.home-assistant.io/t/help-how-to-make-a-dynamic-list-of-integers-variable-not-working/
