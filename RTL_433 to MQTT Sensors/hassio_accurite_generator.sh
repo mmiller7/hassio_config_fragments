@@ -71,7 +71,7 @@ do
         echo "  # $name Sensor" >> $bs_f
         echo "  - platform: mqtt" >> $bs_f
         echo "    name: \"$name Sensor Battery Low\"" >> $bs_f
-        echo "    unique_id: \"${unique_id}_sensor_battery_low\"" >> $s_f
+        echo "    unique_id: \"${unique_id}_sensor_battery_low\"" >> $bs_f
         echo "    state_topic: \"$topic_base/$id\"" >> $bs_f
         echo "    payload_on: \"1\"" >> $bs_f
         echo "    payload_off: \"0\"" >> $bs_f
