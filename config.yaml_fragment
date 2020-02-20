@@ -1,0 +1,30 @@
+# Some userful files to add for organization
+binary_sensor: !include binary_sensors.yaml
+sensor: !include sensors.yaml
+
+# This allows for combined groups in one file
+# with sections for group, automation, script, scene, sensor, etc
+homeassistant:
+  packages: !include_dir_named packages_yaml
+
+# Import python scripts
+python_script:
+
+# pfSense device tracker
+# Useful command to browse SNMP output: "snmpwalk -Os -c public -v 2c 192.168.1.1"
+device_tracker:
+  - platform: snmp
+    host: 192.168.1.1
+    community: public
+    baseoid: .1.3.6.1.2.1.4.22.1.2
+    interval_seconds: 30
+    consider_home: 120
+
+recorder:
+  purge_keep_days: 7
+  purge_interval: 1
+  exclude:
+    domains:
+      - automation
+      #- device_tracker
+
