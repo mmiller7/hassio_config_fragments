@@ -1,0 +1,98 @@
+telegram_bot:
+  - platform: polling
+    api_key: 0123456789:abcdefghijklmnopqrstuvwxyz
+    allowed_chat_ids:
+      # @SomeUser
+      - 0987654321
+
+notify:
+  - name: telegram_someuser
+    platform: telegram
+    chat_id: 0987654321
+    
+    automation:
+  # Notify when the system starts
+  - alias: 'Telegram Notify hassio-start'
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      service: notify.telegram_someuser
+      data:
+        message: 'Home Assistant started - I am alive!'
+
+
+
+  # Setup - sends help info to client
+  - alias: 'Telegram bot start send config'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/start'
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/help'
+    action:
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: |
+            Ok, here's an overview of commands I understand:
+            Check laundry: /laundry
+            Play Ping-Pong: /ping
+            Show Help: /start or /help
+
+
+
+  # This was an example, but is useful as a debug test
+  - alias: 'Telegram bot that reply pong to ping'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/ping'
+    action:
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: 'pong'
+
+
+
+#System Status Alerts
+
+  - alias: 'Telegram MattBatt Check Sensor Alert'
+    trigger:
+      # Binary Sensor Alerts (on = alarm)
+      - entity_id: 
+          # Acurite Temp & Humidity Sensors
+          - binary_sensor.outside_front_sensor_battery_low
+          - binary_sensor.outside_rear_sensor_battery_low
+          - binary_sensor.upstairs_hall_sensor_battery_low
+          - binary_sensor.downstairs_hall_sensor_battery_low
+        platform: state
+        from: 'off'
+        to: 'on'
+        # Reduce flapping
+        for:
+          minutes: 15
+      - platform: numeric_state
+        entity_id:
+          # Zigbee
+          - sensor.washer_vibration_battery_level
+          - sensor.dryer_vibration_battery_level
+          - sensor.openclose_2_battery_level
+        below: 33
+        # Reduce flapping
+        for:
+          minutes: 15
+    action:
+      service: notify.telegram_someuser
+      data_template:
+        message: |
+          Warning - Check Sensor:
+          {{ trigger.to_state.attributes.friendly_name }}
+          
+          
