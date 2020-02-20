@@ -1,0 +1,61 @@
+esphome:
+  name: s31_template
+  platform: ESP8266
+  board: esp01_1m
+
+wifi:
+  ssid: "YourNetworkName"
+  password: "SuperSecretPassword"
+  #power_save_mode: none
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "s31_template setup"
+
+captive_portal:
+
+# Enable logging
+logger:
+  baud_rate: 0
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+
+sensor:
+  - platform: cse7766
+    update_interval: 1s
+    current:
+      name: "s31_template Current"
+    voltage:
+      name: "s31_template Voltage"
+    power:
+      name: "s31_template Power"
+      
+switch:
+  - platform: gpio
+    name: "s31_template Relay"
+    pin: GPIO12
+    id: relay
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode: INPUT_PULLUP
+      inverted: True
+    name: "s31_template Button"
+    on_press:
+      - switch.toggle: relay
+    filters:
+      - delayed_on_off: 100ms
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: yes
