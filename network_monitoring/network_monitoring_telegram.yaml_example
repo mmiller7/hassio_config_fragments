@@ -1,0 +1,46 @@
+
+automation:
+
+  #System Status Alerts
+
+  - alias: 'Telegram User Network Service Failure'
+    trigger:
+      - entity_id:
+          - binary_sensor.ping_core_switch
+          - binary_sensor.ping_local_router
+          - binary_sensor.ping_cable_modem
+          - binary_sensor.ping_cloudflare
+          - binary_sensor.ping_google
+          - binary_sensor.dns_local_nameserver
+          - binary_sensor.dns_cloudflare_nameserver
+          - binary_sensor.dns_google_nameserver
+        platform: state
+        from: 'on'
+        to: 'off'
+    action:
+      service: notify.telegram_user
+      data_template:
+        message: |
+          Warning - Network Service Failure:
+          {{ trigger.to_state.attributes.friendly_name }}
+
+  - alias: 'Telegram User Network Service Restored'
+    trigger:
+      - entity_id:
+          - binary_sensor.ping_core_switch
+          - binary_sensor.ping_local_router
+          - binary_sensor.ping_cable_modem
+          - binary_sensor.ping_cloudflare
+          - binary_sensor.ping_google
+          - binary_sensor.dns_local_nameserver
+          - binary_sensor.dns_cloudflare_nameserver
+          - binary_sensor.dns_google_nameserver
+        platform: state
+        from: 'off'
+        to: 'on'
+    action:
+      service: notify.telegram_user
+      data_template:
+        message: |
+          Status - Network Service Restored:
+          {{ trigger.to_state.attributes.friendly_name }}
