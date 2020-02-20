@@ -1,0 +1,20 @@
+Notes for things:
+
+
+Fixing Aqara viberation sensor increase sensitivity (for washer/dryer)
+------------------------------------------------------------------------
+Source: https://community.home-assistant.io/t/set-the-sensitivity-for-xiaomi-vibration-sensor-through-rest-api-deconz/95543/3
+------------------------------------------------------------------------
+Go to Dev Tools > Services, configure service deconz.configure
+Service data:
+---------------------------------------
+entity: binary_sensor.washer_vibration
+field: '/config'
+data:
+  'sensitivity': 4
+bridgeid: 0123456789
+---------------------------------------
+Value: used "4" for dryer, "1" for washer
+Then press the sensor's button frequently to make it wake up/blink
+while clicking [CALL SERVICE] possibly a few times to make sure
+the data is sent while the sensor is awake.
