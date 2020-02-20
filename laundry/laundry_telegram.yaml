@@ -1,0 +1,255 @@
+variable:
+
+  # Stores list of Telegram IDs to send specified notification to
+  telegram_washer_completed:
+    value: ''
+    restore: true
+  telegram_washer_available:
+    value: ''
+    restore: true
+  telegram_dryer_completed:
+    value: ''
+    restore: true
+  telegram_dryer_available:
+    value: ''
+    restore: true
+
+
+
+automation:
+
+  # General status
+  - alias: 'Telegram bot that replies with laundry status'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/laundry'
+    action:
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: |
+            Laundry Status:
+            + Washer is {{ states.variable.washer_state.state }}
+            + Dryer is {{ states.variable.dryer_state.state }}
+
+            Request notifications using the following commands:
+            /laundry\_notify\_washer\_completed
+            /laundry\_notify\_washer\_available
+            /laundry\_notify\_dryer\_completed
+            /laundry\_notify\_dryer\_available
+
+
+
+  # Store list of Telegram IDs requesting specified notification to
+
+  # Washer Notification Requests
+
+  - alias: 'Telegram bot request washer completed alert'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/laundry_notify_washer_completed'
+    action:
+      - service: variable.set_variable
+        data_template:
+          variable: telegram_washer_completed
+            # This checks if it's already in the variable
+            # If it is, just set it to what it already was
+            # If it's not in the list, add it
+              # This mess checks if the value is empty ('')
+              # If it is empty, it just stores
+              # Else, if it has data in it append ", <new_data>"
+          value: >-
+            {% if trigger.event.data.user_id | string in states.variable.telegram_washer_completed.state %}
+              {{ states.variable.telegram_washer_completed.state }}
+            {%else%}
+              {% if states.variable.telegram_washer_completed.state == ''%}
+                {{ trigger.event.data.user_id }}
+              {%else%}
+                {{ states.variable.telegram_washer_completed.state }}, {{ trigger.event.data.user_id }}
+              {%endif%}
+            {%endif%}
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: 'Ok, I will notify you next time the washer has completed.'
+
+  - alias: 'Telegram bot request washer available alert'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/laundry_notify_washer_available'
+    action:
+      - service: variable.set_variable
+        data_template:
+          variable: telegram_washer_available
+            # This checks if it's already in the variable
+            # If it is, just set it to what it already was
+            # If it's not in the list, add it
+              # This mess checks if the value is empty ('')
+              # If it is empty, it just stores
+              # Else, if it has data in it append ", <new_data>"
+          value: >-
+            {% if trigger.event.data.user_id | string in states.variable.telegram_washer_completed.state %}
+              {{ states.variable.telegram_washer_completed.state }}
+            {%else%}
+              {% if states.variable.telegram_washer_available.state == ''%}
+                {{ trigger.event.data.user_id }}
+              {%else%}
+                {{ states.variable.telegram_washer_available.state }}, {{ trigger.event.data.user_id }}
+              {%endif%}
+            {%endif%}
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: 'Ok, I will notify you next time the washer is available.'
+
+  # Dryer Notification Requests
+
+  - alias: 'Telegram bot request dryer completed alert'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/laundry_notify_dryer_completed'
+    action:
+      - service: variable.set_variable
+        data_template:
+          variable: telegram_dryer_completed
+            # This checks if it's already in the variable
+            # If it is, just set it to what it already was
+            # If it's not in the list, add it
+              # This mess checks if the value is empty ('')
+              # If it is empty, it just stores
+              # Else, if it has data in it append ", <new_data>"
+          value: >-
+            {% if trigger.event.data.user_id | string in states.variable.telegram_washer_completed.state %}
+              {{ states.variable.telegram_washer_completed.state }}
+            {%else%}
+              {% if states.variable.telegram_dryer_completed.state == ''%}
+                {{ trigger.event.data.user_id }}
+              {%else%}
+                {{ states.variable.telegram_dryer_completed.state }}, {{ trigger.event.data.user_id }}
+              {%endif%}
+            {%endif%}
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: 'Ok, I will notify you next time the dryer has completed.'
+
+  - alias: 'Telegram bot request dryer available alert'
+    trigger:
+      - platform: event
+        event_type: telegram_command
+        event_data:
+          command: '/laundry_notify_dryer_available'
+    action:
+      - service: variable.set_variable
+        data_template:
+          variable: telegram_dryer_available
+            # This checks if it's already in the variable
+            # If it is, just set it to what it already was
+            # If it's not in the list, add it
+              # This mess checks if the value is empty ('')
+              # If it is empty, it just stores
+              # Else, if it has data in it append ", <new_data>"
+          value: >-
+            {% if trigger.event.data.user_id | string in states.variable.telegram_washer_completed.state %}
+              {{ states.variable.telegram_washer_completed.state }}
+            {%else%}
+              {% if states.variable.telegram_dryer_available.state == ''%}
+                {{ trigger.event.data.user_id }}
+              {%else%}
+                {{ states.variable.telegram_dryer_available.state }}, {{ trigger.event.data.user_id }}
+              {%endif%}
+            {%endif%}
+      - service: telegram_bot.send_message
+        data_template:
+          target: '{{ trigger.event.data.user_id }}'
+          message: 'Ok, I will notify you next time the dryer is available.'
+
+
+
+  # Send Requested Notifications
+
+  # Send Washer Notifications
+
+  - alias: 'Telegram bot that tells when washer is done'
+    trigger:
+      - platform: state
+        entity_id: variable.washer_state
+        to: 'Completed'
+    condition:
+      condition: template
+      value_template: '{{ states.variable.telegram_washer_completed.state != "" }}'
+    action:
+      - service: python_script.telegram_bot_send_message_helper
+        data_template:
+          target: "{{ states.variable.telegram_washer_completed.state }}"
+          message: The washer is finished running.
+      - service: variable.set_variable
+        data:
+          variable: telegram_washer_completed
+          value: ''
+
+  - alias: 'Telegram bot that tells when washer is available'
+    trigger:
+      - platform: state
+        entity_id: variable.washer_state
+        to: 'Idle'
+    condition:
+      condition: template
+      value_template: '{{ states.variable.telegram_washer_available.state != "" }}'
+    action:
+      - service: python_script.telegram_bot_send_message_helper
+        data_template:
+          target: "{{ states.variable.telegram_washer_available.state }}"
+          message: 'The washer is available.'
+      - service: variable.set_variable
+        data:
+          variable: telegram_washer_available
+          value: ''
+
+  # Send Dryer Notifications
+
+  - alias: 'Telegram bot that tells when dryer is done'
+    trigger:
+      - platform: state
+        entity_id: variable.dryer_state
+        to: 'Completed'
+    condition:
+      condition: template
+      value_template: '{{ states.variable.telegram_dryer_completed.state != "" }}'
+    action:
+      - service: python_script.telegram_bot_send_message_helper
+        data_template:
+          target: " {{ states.variable.telegram_dryer_completed.state }} "
+          message: 'The dryer is finished running.'
+      - service: variable.set_variable
+        data:
+          variable: telegram_dryer_completed
+          value: ''
+
+  - alias: 'Telegram bot that tells when dryer is available'
+    trigger:
+      - platform: state
+        entity_id: variable.dryer_state
+        to: 'Idle'
+    condition:
+      condition: template
+      value_template: '{{ states.variable.telegram_dryer_available.state != "" }}'
+    action:
+      - service: python_script.telegram_bot_send_message_helper
+        data_template:
+          target: "{{ states.variable.telegram_dryer_available.state }}"
+          message: 'The dryer is available.'
+      - service: variable.set_variable
+        data:
+          variable: telegram_dryer_available
+          value: ''
+
+
