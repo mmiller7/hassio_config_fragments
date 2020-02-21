@@ -11,7 +11,7 @@ sensor:
     state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/1234"
     unit_of_measurement: '°C'
     value_template: >-
-      {% if value_json.temperature_C > -20 or value_json.temperature_C < 100 %}
+      {% if value_json.temperature_C > -20 and value_json.temperature_C < 100 %}
         {{ value_json.temperature_C }}
       {% else %}
         {{ states.sensor.example_one_temperature.state }}
@@ -22,7 +22,7 @@ sensor:
     state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/1234"
     unit_of_measurement: '%'
     value_template: >-
-      {% if value_json.humidity >= 0 or value_json.humidity <= 100 %}
+      {% if value_json.humidity >= 0 and value_json.humidity <= 100 %}
         {{ value_json.humidity }}
       {% else %}
         {{ states.sensor.example_one_humidity.state }}
@@ -35,7 +35,7 @@ sensor:
     state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/5678"
     unit_of_measurement: '°C'
     value_template: >-
-      {% if value_json.temperature_C > -20 or value_json.temperature_C < 100 %}
+      {% if value_json.temperature_C > -20 and value_json.temperature_C < 100 %}
         {{ value_json.temperature_C }}
       {% else %}
         {{ states.sensor.example_two_temperature.state }}
@@ -46,7 +46,7 @@ sensor:
     state_topic: "homeassistant/sensor/rtl433/Acurite_tower_sensor/5678"
     unit_of_measurement: '%'
     value_template: >-
-      {% if value_json.humidity >= 0 or value_json.humidity <= 100 %}
+      {% if value_json.humidity >= 0 and value_json.humidity <= 100 %}
         {{ value_json.humidity }}
       {% else %}
         {{ states.sensor.example_two_humidity.state }}
