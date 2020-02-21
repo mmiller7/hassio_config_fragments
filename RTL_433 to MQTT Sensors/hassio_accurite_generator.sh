@@ -46,7 +46,7 @@ do
         echo "    state_topic: \"$topic_base/$id\"" >> $s_f
         echo "    unit_of_measurement: '°C'" >> $s_f
         echo "    value_template: >-" >> $s_f
-        echo "      {% if value_json.temperature_C > $temp_min_C or value_json.temperature_C < $temp_max_C %}" >> $s_f
+        echo "      {% if value_json.temperature_C > $temp_min_C and value_json.temperature_C < $temp_max_C %}" >> $s_f
         echo "        {{ value_json.temperature_C }}" >> $s_f
         echo "      {% else %}" >> $s_f
         echo "        {{ states.sensor.${unique_id}_temperature.state }}" >> $s_f
@@ -59,7 +59,7 @@ do
         echo "    state_topic: \"$topic_base/$id\"" >> $s_f
         echo "    unit_of_measurement: '%'" >> $s_f
         echo "    value_template: >-" >> $s_f
-        echo "      {% if value_json.humidity >= 0 or value_json.humidity <= 100 %}" >> $s_f
+        echo "      {% if value_json.humidity >= 0 and value_json.humidity <= 100 %}" >> $s_f
         echo "        {{ value_json.humidity }}" >> $s_f
         echo "      {% else %}" >> $s_f
         echo "        {{ states.sensor.${unique_id}_humidity.state }}" >> $s_f
