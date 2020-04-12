@@ -5,7 +5,7 @@
 broker="192.168.1.X"
 # Set the authentication information for your MQTT broker
 username="your_mqtt_username_here"
-password="your_mqtt_username_here"
+password="your_mqtt_password_here"
 
 # This topic may be changed, but must match what the YAML is looking for
 topic="homeassistant/sensor/speedtest-net"
