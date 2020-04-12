@@ -1,4 +1,4 @@
-You will also need to copy/download the following files:
+You will also need to copy/download some other files and set things up, I suggest using the SSH Addon to do so as it makes some of the steps much easier.
 
 1) build the folder structure:
 /config/speedtest-net
