@@ -1,0 +1,96 @@
+
+# Call script which publishes readings to MQTT
+shell_command:
+  speedtest_net_run_test: '/config/speedtest-net/mqtt_pub.sh'
+
+automation:
+  # Run the test on startup, and run 3x/hour
+  - alias: speedtest_net_run_test
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: time_pattern
+        minutes: /20
+    action:
+      service: shell_command.speedtest_net_run_test
+
+
+
+# Pull in the readings from MQTT
+sensor:
+
+  # Ping Jitter
+  - platform: mqtt
+    name: "Ping Jitter Speedtest.net"
+    unique_id: "speedtest_net_ping_jitter"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    unit_of_measurement: 'ms'
+    value_template: "{{ value_json.ping.jitter }}"
+
+  # Ping Latency
+  - platform: mqtt
+    name: "Ping Latency Speedtest.net"
+    unique_id: "speedtest_net_ping_latency"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    unit_of_measurement: 'ms'
+    value_template: "{{ value_json.ping.latency }}"
+
+  # Download Speed
+  - platform: mqtt
+    name: "Download Speed Speedtest.net"
+    unique_id: "speedtest_net_download_speed"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    unit_of_measurement: 'Mb/s'
+    value_template: "{{ (value_json.download.bandwidth | float) * 8 / 1000000 | round(2) }}"
+
+  # Upload Speed
+  - platform: mqtt
+    name: "Upload Speed Speedtest.net"
+    unique_id: "speedtest_net_upload_speed"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    unit_of_measurement: 'Mb/s'
+    value_template: "{{ (value_json.upload.bandwidth | float) * 8 / 1000000 | round(2) }}"
+
+  # Packet Loss
+  - platform: mqtt
+    name: "Packet Loss Speedtest.net"
+    unique_id: "speedtest_net_packet_loss"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    unit_of_measurement: '%'
+    value_template: "{{ value_json.packetLoss }}"
+
+  # ISP
+  - platform: mqtt
+    name: "ISP Speedtest.net"
+    unique_id: "speedtest_net_isp"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    value_template: "{{ value_json.isp }}"
+
+  # Server Name
+  - platform: mqtt
+    name: "Server Name Speedtest.net"
+    unique_id: "speedtest_net_server_name"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    value_template: "{{ value_json.server.name }}"
+
+  # Server Location
+  - platform: mqtt
+    name: "Server Location Speedtest.net"
+    unique_id: "speedtest_net_server_location"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    value_template: "{{ value_json.server.location }}"
+
+  # Result ID
+  - platform: mqtt
+    name: "Speedtest.net Result ID"
+    unique_id: "speedtest_net_result_id"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    value_template: "{{ value_json.result.id }}"
+
+  # Result URL
+  - platform: mqtt
+    name: "Speedtest.net Result URL"
+    unique_id: "speedtest_net_result_url"
+    state_topic: "homeassistant/sensor/speedtest-net"
+    value_template: "{{ value_json.result.url }}"
+
