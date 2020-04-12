@@ -22,3 +22,11 @@ cp  /usr/lib/libcares.so*   /config/speedtest-net/mosquitto_pub/lib/
 Then edit the file to put in your broker, username, password, and optionally add a server-ID
 
 5) Download the YAML config and save it in your packages folder (or add it to your config.yaml)
+   Remember - you will need to restart Home Assistant to import the new sensors!
+
+6) Create a "Markdown" Lovelace card to add a speedtest image to your Overview
+Example:
+      type: markdown
+      content: <img src="https://www.speedtest.net/result/c/{{states.sensor.speedtest_net_result_id.state }}.png">
+      refresh_interval: 60
+ 
