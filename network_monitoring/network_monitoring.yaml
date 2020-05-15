@@ -1,3 +1,5 @@
+# This adds sensors to report status of ICMP PING and DNS lookup to various servers
+
 binary_sensor:
   - platform: ping
     host: 192.168.1.10
@@ -35,7 +37,7 @@ binary_sensor:
     payload_off: fail
     name: DNS Local Nameserver
     scan_interval: 10
-    command_timeout: 30
+    command_timeout: 10
     device_class: connectivity
 
   - platform: command_line
@@ -43,7 +45,7 @@ binary_sensor:
     payload_on: pass
     payload_off: fail
     name: DNS Cloudflare Nameserver
-    scan_interval: 60
+    scan_interval: 30
     command_timeout: 30
     device_class: connectivity
 
@@ -52,6 +54,6 @@ binary_sensor:
     payload_on: pass
     payload_off: fail
     name: DNS Google Nameserver
-    scan_interval: 60
+    scan_interval: 30
     command_timeout: 30
     device_class: connectivity
