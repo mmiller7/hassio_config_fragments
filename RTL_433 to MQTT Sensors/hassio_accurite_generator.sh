@@ -4,11 +4,12 @@ bs_f="output/generated_binary_sensors.yaml"
 p_f="output/generated_combined_package.yaml"
 f_f="output/generated_sensors_filters.yaml"
 fp_f="output/generated_sensors_filters_package.yaml"
+lu_f="output/generated_sensors_last_updated.yaml"
+lup_f="output/generated_sensors_last_updated_package.yaml"
 topic_base="homeassistant/sensor/rtl433/Acurite_tower_sensor"
 
 # List of sensors
 sensor_list=( "1234/Outside Front" "5678/Outside Rear" "4321/Downstairs Hall" "8765/Upstairs Hall" )
-
 
 # Indoor sensors spec says -20 to +70C
 # Outdoor sensors spec says -40C to +70C
@@ -22,6 +23,8 @@ echo '' > $bs_f
 echo '' > $p_f
 echo '' > $f_f
 echo '' > $fp_f
+echo '' > $lu_f
+echo '' > $lup_f
 
 # here we go
 echo ""
@@ -30,6 +33,8 @@ echo "Binary Sensor filename: $bs_f"
 echo "package filename: $p_f"
 echo "Filter filename: $f_f"
 echo "Filter package filename: $fp_f"
+echo "Last_Updated filename: $f_f"
+echo "Last_Updated package filename: $fp_f"
 echo "MQTT Topic Base: $topic_base"
 echo ""
 echo "Generating YAML..."
@@ -44,6 +49,8 @@ do
 
 	# debug info
 	echo "$name -> $id"
+
+	# Main sensor temp/humidity
 
 	# write out data to file
 	echo "  # $name Sensor" >> $s_f
@@ -75,7 +82,7 @@ do
 	echo "      {% endif %}" >> $s_f
 	echo "" >> $s_f
 
-
+	# Main sensor low battery
 
 	echo "  # $name Sensor" >> $bs_f
 	echo "  - platform: mqtt" >> $bs_f
@@ -93,6 +100,8 @@ do
 	echo "" >> $bs_f
 
 
+
+	# custom filters for temp/humidity graph smoothing
 
 	echo "  - platform: filter" >> $f_f
 	echo "    name: \"$name Temperature Filtered\"" >> $f_f
@@ -121,6 +130,24 @@ do
         echo "        precision: 1" >> $f_f
         echo "" >> $f_f
 
+
+
+	# custom last_updated sensor counter for watchdog or other stat use
+
+	echo "  - platform: template" >> $lu_f
+	echo "    sensors:" >> $lu_f
+	echo "      ${unique_id}_sensor_age:" >> $lu_f
+	echo "        friendly_name: \"$name Sensor Age\"" >> $lu_f
+	echo "        entity_id: sensor.time" >> $lu_f
+	echo "        value_template: >-" >> $lu_f
+	echo "          {% if states.sensor.${unique_id}_temperature.last_changed > states.sensor.${unique_id}_humidity.last_changed %}" >> $lu_f
+	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0) }}" >> $lu_f
+	echo "          {% else %}" >> $lu_f
+	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0) }}" >> $lu_f
+	echo "          {% endif %}" >> $lu_f
+	echo "        unit_of_measurement: \"Seconds\"" >> $lu_f
+	echo "" >> $lu_f
+
 done
 
 echo ""
@@ -142,5 +169,11 @@ echo "" >> $fp_f
 echo "sensor:" >> $fp_f
 echo "" >> $fp_f
 cat $f_f >> $fp_f
+
+echo "# Sensor Last_Updated Package File" >> $lup_f
+echo "" >> $lup_f
+echo "sensor:" >> $lup_f
+echo "" >> $lup_f
+cat $lu_f >> $lup_f
 
 echo "Done."
