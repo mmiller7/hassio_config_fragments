@@ -4,8 +4,12 @@ esphome:
   board: esp01_1m
 
 wifi:
-  ssid: "YourNetworkName"
-  password: "SuperSecretPassword"
+  # Create a file /config/esphome/secrets.yaml
+  # and put the following (not commented, not indented):
+  # ssid: "Your_Network_SSID_Name"
+  # password: "YourSuperSecretPassword"
+  ssid: !secret ssid
+  password: !secret password
   #power_save_mode: none
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
@@ -29,13 +33,25 @@ uart:
 
 sensor:
   - platform: cse7766
-    update_interval: 1s
+    update_interval: 0.5s
     current:
       name: "s31_template Current"
+      filters:
+        - or:
+            - throttle: 15s
+            - delta: 0.1
     voltage:
       name: "s31_template Voltage"
+      filters:
+        - or:
+            - throttle: 15s
+            - delta: 0.5
     power:
       name: "s31_template Power"
+      filters:
+        - or:
+            - throttle: 15s
+            - delta: 0.25
       
 switch:
   - platform: gpio
