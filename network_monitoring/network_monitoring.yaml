@@ -13,6 +13,8 @@ binary_sensor:
     count: 3
     scan_interval: 10
 
+    # Seems PING is now blocked on modem?
+    # Maybe LAGG related
   - platform: ping
     host: 192.168.100.1
     name: PING Cable Modem
@@ -20,16 +22,31 @@ binary_sensor:
     scan_interval: 10
 
   - platform: ping
+    host: 192.168.10.1
+    name: PING Cellular Modem
+    count: 3
+    scan_interval: 10
+
+#  - platform: command_line
+#    command: 'curl --connect-timeout 9 http://192.168.100.1 > /dev/null 2>&1  && echo pass || echo fail'
+#    payload_on: pass
+#    payload_off: fail
+#    name: HTTP Cable Modem
+#    scan_interval: 10
+#    command_timeout: 10
+#    device_class: connectivity
+
+  - platform: ping
     host: 1.1.1.1
     name: PING Cloudflare
     count: 3
-    scan_interval: 60
+    scan_interval: 10
 
   - platform: ping
     host: 8.8.8.8
     name: PING Google
     count: 3
-    scan_interval: 60
+    scan_interval: 10
 
   - platform: command_line
     command: 'nslookup google.com 192.168.1.1 >> /dev/null && echo pass || echo fail'
@@ -45,8 +62,8 @@ binary_sensor:
     payload_on: pass
     payload_off: fail
     name: DNS Cloudflare Nameserver
-    scan_interval: 30
-    command_timeout: 30
+    scan_interval: 10
+    command_timeout: 10
     device_class: connectivity
 
   - platform: command_line
@@ -54,6 +71,52 @@ binary_sensor:
     payload_on: pass
     payload_off: fail
     name: DNS Google Nameserver
-    scan_interval: 30
-    command_timeout: 30
+    scan_interval: 10
+    command_timeout: 10
     device_class: connectivity
+
+sensor:
+
+#  - platform: command_line
+#    name: "Outbound Public IP"
+#    #command: 'curl --connect-timeout 55 -s http://checkip.dyndns.org | sed "s/.*<body>Current IP Address: //;s/<\/body>.*//" 2>/dev/null || echo "Unknown"'
+#    command: '
+#      checkip_result=$(curl --connect-timeout 5 -s http://checkip.dyndns.org || curl --connect-timeout 5 -s http://checkip.dyndns.org);
+#      echo "$checkip_result" | sed "s/.*<body>Current IP Address: //;s/<\/body>.*//" || echo "Unknown"
+#      '
+#    scan_interval: 20
+#    command_timeout: 17
+
+  - platform: command_line
+    name: "ISP"
+    #command: 'dig -x $(curl --connect-timeout 5 -s http://checkip.dyndns.org | sed "s/.*<body>Current IP Address: //;s/<\/body>.*//") +short | awk -F ''.'' ''{ print $(NF-2) "." $(NF-1) }'' 2>/dev/null || echo "Unknown"'
+    #command: '
+    #  checkip_result=$(curl --connect-timeout 15 -s http://checkip.dyndns.org || curl --connect-timeout 10 -s http://checkip.dyndns.org );
+    #  echo "$checkip_result" | grep "Current IP Address" >/dev/null && (
+    #    ip_addr=$(echo "$checkip_result" | sed "s/.*<body>Current IP Address: //;s/<\/body>.*//");
+    #    dig_result=$(dig -x "$ip_addr" +short || dig -x "$ip_addr" +short );
+    #    echo "$dig_result" | awk -F ''.'' ''{ print $(NF-2) "." $(NF-1) }'' 2>/dev/null || echo "Unknown DNS";
+    #  ) || (
+    #    echo "Unknown IP";
+    #  )'
+    command: '
+      checkip_result=$(dig -4 +short myip.opendns.com @resolver1.opendns.com || dig -4 +short myip.opendns.com @resolver1.opendns.com );
+      echo "$checkip_result" | grep "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" >/dev/null && (
+        ip_addr=$(echo "$checkip_result" | sed "s/.*<body>Current IP Address: //;s/<\/body>.*//");
+        dig_result=$(dig -x "$ip_addr" +short || dig -x "$ip_addr" +short );
+        echo "$dig_result" | awk -F ''.'' ''{ print $(NF-2) "." $(NF-1) }'' 2>/dev/null || echo "Unknown DNS";
+      ) || (
+        echo "Unknown IP";
+      )'
+    scan_interval: 10
+    command_timeout: 9
+    #scan_interval: 30
+    #command_timeout: 29
+
+homeassistant:
+  customize:
+    sensor.outbound_public_ip:
+      icon: mdi:earth
+    sensor.isp:
+      icon: mdi:earth
+
