@@ -1,132 +1,126 @@
-variable:
+input_text:
 
-  washer_state:
+  washing_machine:
     # Possible states:
     # -Idle (not in use, possibly occupied)
-    # -Indeterminate (bumped, possibly loading/unloading)
+    # -Indeterminate (possibly loading/unloading)
     # -Running
     # -Completed (finished, not empty)
-    value: 'Idle'
-    attributes:
-      friendly_name: 'Washer State'
-    restore: true
+    # -Door_Shut_Alarm (warning that door is left shut getting funky)
+    name: 'Washing Machine'
+    initial: 'Initializing'
+
+# to expose the text status read-only
+sensor:
+  - platform: template
+    sensors:
+      washing_machine:
+        friendly_name: 'Washing Machine'
+        icon_template: >-
+          {% if is_state('input_text.washing_machine','Door_Shut_Alarm') %}
+          mdi:washing-machine-alert
+          {% else %}
+          mdi:washing-machine
+          {% endif %}
+        value_template: "{{ states('input_text.washing_machine') }}"
+
 
 automation:
 
-########################
-# Washer State Machine #
-########################
+#################################
+# Washing Machine State Machine #
+#################################
 
-  - alias: "Washer Idle > Indeterminate"
+  - alias: "Washer > Indeterminate"
     # Maybe bumped, maybe loading, maybe started
     trigger:
       - platform: state
-        entity_id: binary_sensor.washer_vibration
+        entity_id: binary_sensor.laundry_washer_door
+        from: 'on'
+        to: 'off'
+      - platform: state
+        entity_id: binary_sensor.laundry_washer_door
+        from: 'off'
         to: 'on'
-    condition:
-      - condition: state
-        entity_id: variable.washer_state
-        state: 'Idle'
+      - platform: template
+        value_template: "{{ is_state('binary_sensor.laundry_washer_door','on') and is_state('input_text.washing_machine','Completed') }}"
+      - platform: homeassistant
+        event: start
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
         data:
-          variable: washer_state
           value: 'Indeterminate'
 
   - alias: "Washer Indeterminate Timeout > Idle"
-    # If it's been 6 minutes is now off without moving to run, assume it was bumped, make idle
+    # Assume it was bumped, make idle
     trigger:
       - platform: state
-        entity_id: variable.washer_state
+        entity_id: input_text.washing_machine
         to: 'Indeterminate'
-        for:
-          minutes: 6
-    condition:
-      - condition: state
-        entity_id: binary_sensor.washer_vibration
-        state: 'off'
-      - condition: state
-        entity_id: variable.washer_state
-        state: 'Indeterminate'
+        for: '00:10:00'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
         data:
-          variable: washer_state
           value: 'Idle'
 
-
-  - alias: "Washer Indeterminate > Running"
-    # If it's on for 2 minutes and still on, move to running
+  - alias: "Washer > Running"
+    # Move to running
     trigger:
       - platform: state
-        entity_id: binary_sensor.washer_vibration
+        entity_id: binary_sensor.laundry_washer_running
         to: 'on'
-        for:
-          minutes: 2
-    condition:
-      - condition: state
-        entity_id: binary_sensor.washer_vibration
-        state: 'on'
-      - condition: state
-        entity_id: variable.washer_state
-        state: 'Indeterminate'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
         data:
-          variable: washer_state
           value: 'Running'
 
   - alias: "Washer Running > Completed"
     # If it's off for longer than cycle pause, and still off, move to completed
     trigger:
       - platform: state
-        entity_id: binary_sensor.washer_vibration
+        entity_id: binary_sensor.laundry_washer_running
+        from: 'on'
         to: 'off'
-        for:
-          minutes: 6
-    condition:
-      - condition: state
-        entity_id: binary_sensor.washer_vibration
-        state: 'off'
-      - condition: state
-        entity_id: variable.washer_state
-        state: 'Running'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
         data:
-          variable: washer_state
           value: 'Completed'
-
-  - alias: "Washer Completed > Indeterminate"
-    # May be bumped, loading/unloading, or some odd cycle
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.washer_vibration
-        to: 'on'
-    condition:
-      - condition: state
-        entity_id: variable.washer_state
-        state: 'Completed'
-    action:
-      - service: variable.set_variable
-        data:
-          variable: washer_state
-          value: 'Indeterminate'
 
   - alias: "Washer Completed Timeout > Idle"
     # If it's been at Completed too long, reset to idle
     trigger:
       - platform: state
-        entity_id: variable.washer_state
-        to: 'Commpleted'
-        for:
-          hours: 24
+        entity_id: input_text.washing_machine
+        to: 'Completed'
+        for: '08:00:00'
+    action:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
+        data:
+          value: 'Idle'
+
+  - alias: "Washer > Door_Shut_Alarm"
+    # Door Shut Too Long while idle
+    trigger:
+      - platform: state
+        entity_id: input_text.washing_machine
+        to: 'Idle'
     condition:
       - condition: state
-        entity_id: variable.washer_state
-        state: 'Completed'
+        entity_id: binary_sensor.laundry_washer_door
+        state: 'off'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.washing_machine
         data:
-          variable: washer_state
-          value: 'Idle'
+          value: 'Door_Shut_Alarm'

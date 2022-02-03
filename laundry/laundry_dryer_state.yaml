@@ -1,0 +1,16 @@
+binary_sensor:
+  - platform: template
+    sensors:
+
+      laundry_dryer_running:
+        friendly_name: "Laundry Dryer Running"
+        value_template: "{{
+           states('sensor.iotawatt_output_dryer') | int(0) > 100
+        }}"
+
+      laundry_dryer_door:
+        friendly_name: "Laundry Dryer Door"
+        value_template: "{{
+          states('sensor.iotawatt_output_dryer') | float(0) > 10 and
+          states('sensor.iotawatt_output_dryer') | int(0) < 50
+        }}"

@@ -1,132 +1,107 @@
-variable:
+input_text:
 
-  dryer_state:
+  clothes_dryer:
     # Possible states:
     # -Idle (not in use, possibly occupied)
-    # -Indeterminate (bumped, possibly loading/unloading)
+    # -Indeterminate (possibly loading/unloading)
     # -Running
     # -Completed (finished, not empty)
-    value: 'Idle'
-    attributes:
-      friendly_name: 'Dryer State'
-    restore: true
+    name: 'Clothes Dryer'
+    initial: 'Initializing'
+
+
+# to expose the text status read-only
+sensor:
+  - platform: template
+    sensors:
+      clothes_dryer:
+        friendly_name: 'Clothes Dryer'
+        icon_template: mdi:tumble-dryer
+        value_template: "{{ states('input_text.clothes_dryer') }}"
+
 
 automation:
 
-########################
-# Dryer State Machine #
-########################
+###############################
+# Clothes Dryer State Machine #
+###############################
 
-  - alias: "Dryer Idle > Indeterminate"
-    # Maybe bumped, maybe loading, maybe started
+  - alias: "Dryer > Indeterminate"
+    # Maybe loading
     trigger:
       - platform: state
-        entity_id: binary_sensor.dryer_vibration
+        entity_id: binary_sensor.laundry_dryer_door
+        from: 'off'
         to: 'on'
-    condition:
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Idle'
+      - platform: state
+        entity_id: binary_sensor.laundry_dryer_door
+        from: 'on'
+        to: 'off'
+      - platform: homeassistant
+        event: start
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.clothes_dryer
         data:
-          variable: dryer_state
           value: 'Indeterminate'
 
   - alias: "Dryer Indeterminate Timeout > Idle"
-    # If it's been 6 minutes is now off without moving to run, assume it was bumped, make idle
+    # Assume it was bumped, make idle
     trigger:
       - platform: state
-        entity_id: variable.dryer_state
+        entity_id: input_text.clothes_dryer
         to: 'Indeterminate'
-        for:
-          minutes: 6
-    condition:
-      - condition: state
-        entity_id: binary_sensor.dryer_vibration
-        state: 'off'
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Indeterminate'
+        for: '00:05:00'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.clothes_dryer
         data:
-          variable: dryer_state
           value: 'Idle'
 
-
-  - alias: "Dryer Indeterminate > Running"
-    # If it's on for 2 minutes and still on, move to running
+  - alias: "Dryer > Running"
+    # Move to running
     trigger:
       - platform: state
-        entity_id: binary_sensor.dryer_vibration
+        entity_id: binary_sensor.laundry_dryer_running
         to: 'on'
-        for:
-          minutes: 2
-    condition:
-      - condition: state
-        entity_id: binary_sensor.dryer_vibration
-        state: 'on'
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Indeterminate'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.clothes_dryer
         data:
-          variable: dryer_state
           value: 'Running'
 
   - alias: "Dryer Running > Completed"
-    # If it's off for longer than cycle pause, and still off, move to completed
+    # If it's stopped running, and door is not opened, move to completed
     trigger:
       - platform: state
-        entity_id: binary_sensor.dryer_vibration
+        entity_id: binary_sensor.laundry_dryer_running
+        from: 'on'
         to: 'off'
-        for:
-          minutes: 6
     condition:
       - condition: state
-        entity_id: binary_sensor.dryer_vibration
+        entity_id: binary_sensor.laundry_dryer_door
         state: 'off'
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Running'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.clothes_dryer
         data:
-          variable: dryer_state
           value: 'Completed'
-
-  - alias: "Dryer Completed > Indeterminate"
-    # May be bumped, loading/unloading, or some odd cycle
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.dryer_vibration
-        to: 'on'
-    condition:
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Completed'
-    action:
-      - service: variable.set_variable
-        data:
-          variable: dryer_state
-          value: 'Indeterminate'
 
   - alias: "Dryer Completed Timeout > Idle"
     # If it's been at Completed too long, reset to idle
     trigger:
       - platform: state
-        entity_id: variable.dryer_state
-        to: 'Commpleted'
-        for:
-          hours: 24
-    condition:
-      - condition: state
-        entity_id: variable.dryer_state
-        state: 'Completed'
+        entity_id: input_text.clothes_dryer
+        to: 'Completed'
+        for: '23:00:00'
     action:
-      - service: variable.set_variable
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.clothes_dryer
         data:
-          variable: dryer_state
           value: 'Idle'
+
