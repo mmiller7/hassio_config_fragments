@@ -63,6 +63,7 @@ do
 	echo "  - platform: mqtt" >> $s_f
 	echo "    name: \"$name Temperature\"" >> $s_f
 	echo "    unique_id: \"${unique_id}_temperature\"" >> $s_f
+	echo "    device_class: temperature" >> $s_f
 	echo "    force_update: true" >> $s_f
 	echo "    state_topic: \"$topic_base/$id\"" >> $s_f
 	echo "    unit_of_measurement: '°C'" >> $s_f
@@ -77,6 +78,7 @@ do
 	echo "  - platform: mqtt" >> $s_f
 	echo "    name: \"$name Humidity\"" >> $s_f
 	echo "    unique_id: \"${unique_id}_humidity\"" >> $s_f
+	echo "    device_class: humidity" >> $s_f
 	echo "    icon: hass:water-percent" >> $s_f
 	echo "    force_update: true" >> $s_f
 	echo "    state_topic: \"$topic_base/$id\"" >> $s_f
@@ -156,10 +158,10 @@ do
 	echo "        value_template: >-" >> $lu_f
 	echo "          {% if states.sensor.${unique_id}_temperature.last_changed > states.sensor.${unique_id}_humidity.last_changed %}" >> $lu_f
 #	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0) }}" >> $lu_f
-	echo "            {{ (now() - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0) }}" >> $lu_f
+	echo "            {{ (now() - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0,default=0) }}" >> $lu_f
 	echo "          {% else %}" >> $lu_f
 #	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0) }}" >> $lu_f
-	echo "            {{ (now() - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0) }}" >> $lu_f
+	echo "            {{ (now() - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0,default=0) }}" >> $lu_f
 	echo "          {% endif %}" >> $lu_f
 	echo "        unit_of_measurement: \"Seconds\"" >> $lu_f
 	echo "" >> $lu_f
@@ -170,6 +172,7 @@ do
 	echo "  - platform: mqtt" >> $sn_f
 	echo "    name: \"$name Sensor SNR\"" >> $sn_f
 	echo "    unique_id: \"${unique_id}_sensor_snr\"" >> $sn_f
+	echo "    device_class: signal_strength" >> $sn_f
 	echo "    icon: mdi:signal" >> $sn_f
 	echo "    state_topic: \"$topic_base/$id\"" >> $sn_f
 	echo "    unit_of_measurement: 'dB'" >> $sn_f
