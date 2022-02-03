@@ -1,0 +1,454 @@
+# Upstairs Thermostat Scheduling
+# This file handles scheduling of thermostat temperatures
+
+input_number:
+
+  # These will be the target for the thermostat (indirect, to allow vacation or gradual changes)
+  upstairs_hvac_requested_heat:
+    # initial: 70
+    min: 60
+    max: 80
+  upstairs_hvac_requested_cool:
+    # initial: 72
+    min: 60
+    max: 80
+
+  # These will be the desired temperature cases for home/away throughout the day
+  upstairs_hvac_requested_home_heat:
+    # initial: 70
+    min: 60
+    max: 80
+  upstairs_hvac_requested_home_cool:
+    # initial: 72
+    min: 60
+    max: 80
+  upstairs_hvac_requested_away_heat:
+    name: Upstairs HVAC Away Heat
+    icon: hass:fire
+    # initial: 65
+    min: 60
+    max: 80
+  upstairs_hvac_requested_away_cool:
+    name: Upstairs HVAC Away Cool
+    icon: hass:snowflake
+    # initial: 78
+    min: 60
+    max: 80
+  upstairs_hvac_requested_severe_weather_mode_heat:
+    name: Upstairs HVAC Severe Weather Mode Heat
+    icon: hass:fire
+    # initial: 71
+    min: 65
+    max: 80
+  upstairs_hvac_requested_severe_weather_mode_cool:
+    name: Upstairs HVAC Severe Weather Mode Cool
+    icon: hass:snowflake
+    # initial: 73
+    min: 65
+    max: 80
+
+
+input_select:
+
+  # This will select the time of day the home temperature is selecting
+  upstairs_hvac_daily_cycle:
+    name: Upstairs HVAC Daily Cycle
+    options:
+      - Pre_Morning
+      - Morning
+      - Daytime
+      - Evening
+      - Night
+
+input_boolean:
+
+  # This will be a "vacation hold" to permanently set it away temps 24x7
+  upstairs_hvac_vacation_mode:
+    name: Upstairs HVAC Vacation Hold
+    icon: mdi:home-export-outline
+
+  # This will be a "severe weather" mode to set tight limits in case of power outage
+  upstairs_hvac_severe_weather_mode:
+    name: Upstairs HVAC Severe Weather Hold
+    icon: mdi:home-thermometer-outline
+
+
+sensor:
+
+  - platform: template
+    sensors:
+
+      upstairs_hvac_requested_heat_computed:
+        friendly_name: "Upstairs HVAC Requested Heat Computed"
+        unit_of_measurement: '°F'
+        value_template: >-
+          {{ states('input_number.upstairs_hvac_requested_heat') | int(0) + states('input_number.upstairs_hvac_requested_offset') | int(0) + states('input_number.downstairs_temp_feelslike_offset_realtime') | int(0) + states('input_number.upstairs_hvac_manual_heat_adj') | int(0) }}
+
+      upstairs_hvac_requested_cool_computed:
+        friendly_name: "Upstairs HVAC Requested Cool Computed"
+        unit_of_measurement: '°F'
+        value_template: >-
+          {{ states('input_number.upstairs_hvac_requested_cool') | int(0) + states('input_number.upstairs_hvac_requested_offset') | int(0) + states('input_number.downstairs_temp_feelslike_offset_realtime') | int(0) + states('input_number.upstairs_hvac_manual_cool_adj') | int(0) }}
+
+      upstairs_hvac_manual_target_heat:
+        friendly_name: "Upstairs HVAC Manual Target Heat"
+        unit_of_measurement: '°F'
+        value_template: >-
+          {{ states('input_number.upstairs_hvac_requested_heat') | int(0) + states('input_number.upstairs_hvac_manual_heat_adj') | int(0) }}
+
+      upstairs_hvac_manual_target_cool:
+        friendly_name: "Upstairs HVAC Manual Target Cool"
+        unit_of_measurement: '°F'
+        value_template: >-
+          {{ states('input_number.upstairs_hvac_requested_cool') | int(0) + states('input_number.upstairs_hvac_manual_cool_adj') | int(0) }}
+
+
+
+
+automation:
+
+  # Updating what temps we want during the day
+
+  - alias: "Upstairs HVAC Set Pre_Morning Temp"
+    trigger:
+      # Normally 67 -> 68
+      - platform: time
+        at: '04:30:00'
+      # Normally 68 -> 69
+      - platform: time
+        at: '05:00:00'
+      # Normally 69 -> 70
+      - platform: time
+        at: '05:30:00'
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.outside_rear_sensor_age
+        below: 10800
+      - condition: numeric_state
+        entity_id: sensor.outside_rear_temperature
+        below: 36
+      - condition: numeric_state
+        entity_id: input_number.upstairs_hvac_requested_home_heat
+        below: 71
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_heat
+          value:  "{{ states('input_number.upstairs_hvac_requested_home_heat') | int(0) + 1 }}"
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_cool
+          value:  "{{ states('input_number.upstairs_hvac_requested_home_heat') | int(0) }}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.upstairs_hvac_daily_cycle 
+          option: Pre_Morning
+
+  # Normal daily schedule
+
+  - alias: "Upstairs HVAC Set Morning Temp"
+    trigger:
+      - platform: time
+        at: '06:00:00'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_heat
+          value: 71
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_cool
+          value: 74
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.upstairs_hvac_daily_cycle 
+          option: Morning
+
+  - alias: "Upstairs HVAC Set Daytime Temp"
+    trigger:
+      - platform: time
+        at: '08:30:00'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_heat
+          value: 69
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_cool
+          value: 75
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.upstairs_hvac_daily_cycle 
+          option: Daytime
+
+  - alias: "Upstairs HVAC Set Evening Temp"
+    trigger:
+      - platform: time
+        at: '19:00:00'
+      - platform: sun
+        event: sunset
+        offset: "-01:00:00"
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_heat
+          value: 70
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_cool
+          value: 74
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.upstairs_hvac_daily_cycle 
+          option: Evening
+
+  - alias: "Upstairs HVAC Set Night Temp"
+    trigger:
+      - platform: time
+        at: '22:30:00'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_heat
+          value: 67
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_home_cool
+          value: 73
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.upstairs_hvac_daily_cycle 
+          option: Night
+
+
+
+  # Updating the target temp we will later send to the thermostat
+
+  - alias: "Upstairs HVAC set Requested When Home"
+    trigger:
+      - platform: state
+        entity_id: input_select.upstairs_hvac_daily_cycle
+      - platform: state
+        entity_id:
+          - input_number.upstairs_hvac_requested_home_heat
+          - input_number.upstairs_hvac_requested_home_cool
+      - platform: template
+        value_template: '{{ states("group.all_people") == "home" }}'
+        # for 30 sec, to help reduce zwave network load when arriving home
+        for: '00:00:30'
+      - platform: template
+        value_template: '{{ states("group.nws_less_severe_alerts_my_county") == "on" }}'
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        to: 'off'
+    # Probably don't need queued because this is just setting vars
+    mode: restart
+    condition:
+      - condition: or
+        conditions:
+          # someone is home
+          - condition: template
+            value_template: '{{ states("group.all_people") == "home" }}'
+          # Severe Weather Impending
+          - condition: template
+            value_template: '{{ states("group.nws_less_severe_alerts_my_county") == "on" }}'
+          # cycle is not daytime
+          - condition: state
+            entity_id: input_select.upstairs_hvac_daily_cycle
+            state:
+              - Pre_Morning
+              - Morning
+              - Evening
+              - Night
+      - condition: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        state: 'off'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_heat
+          value:  "{{ states('input_number.upstairs_hvac_requested_home_heat') | int(0) }}"
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_cool
+          value:  "{{ states('input_number.upstairs_hvac_requested_home_cool') | int(0) }}"
+
+  - alias: "Upstairs HVAC set Requested Daytime Away"
+    trigger:
+      - platform: state
+        entity_id: input_select.upstairs_hvac_daily_cycle
+        to: Daytime
+      - platform: state
+        entity_id:
+          - input_number.upstairs_hvac_requested_home_heat
+          - input_number.upstairs_hvac_requested_home_cool
+      - platform: template
+        value_template: '{{ states("group.all_people") != "home" }}'
+      - platform: template
+        value_template: '{{ states("group.nws_less_severe_alerts_my_county") == "off" }}'
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        to: 'off'
+    # Probably don't need queued because this is just setting vars
+    mode: restart
+    condition:
+      - condition: and
+        conditions:
+          # someone is home
+          - condition: template
+            value_template: '{{ states("group.all_people") != "home" }}'
+          # Severe Weather Impending
+          - condition: template
+            value_template: '{{ states("group.nws_less_severe_alerts_my_county") == "off" }}'
+          # cycle is not daytime
+          - condition: state
+            entity_id: input_select.upstairs_hvac_daily_cycle
+            state:
+              - Daytime
+          - condition: state
+            entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+            state: 'off'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_heat
+          value:  "{{ states('input_number.upstairs_hvac_requested_away_heat') | int(0) }}"
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_cool
+          value:  "{{ states('input_number.upstairs_hvac_requested_away_cool') | int(0) }}"
+
+  - alias: "Upstairs HVAC set Requested Severe Weather Mode"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        to: 'on'
+      - platform: state
+        entity_id:
+          - input_number.upstairs_hvac_requested_severe_weather_mode_heat
+          - input_number.upstairs_hvac_requested_severe_weather_mode_cool
+    # Probably don't need queued because this is just setting vars
+    mode: restart
+    condition:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+            state: 'on'
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_heat
+          value:  "{{ states('input_number.upstairs_hvac_requested_severe_weather_mode_heat') | int(0) }}"
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.upstairs_hvac_requested_cool
+          value:  "{{ states('input_number.upstairs_hvac_requested_severe_weather_mode_cool') | int(0) }}"
+
+
+
+  # Push values to thermostat
+
+  - alias: "Upstairs HVAC Set Vacation"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_vacation_mode
+        to: 'on'
+        for: '00:00:05'
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        to: 'off'
+        for: '00:00:05'
+      - platform: state
+        entity_id:
+          - input_number.upstairs_hvac_requested_away_heat
+          - input_number.upstairs_hvac_requested_away_cool
+        for: '00:00:05'
+      - platform: state
+        entity_id: climate.upstairs_thermostat_mode
+        from: 'off'
+        for: '00:00:05'
+    mode: queued
+    condition:
+      - condition: state
+        entity_id: input_boolean.upstairs_hvac_vacation_mode
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        state: 'off'
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.upstairs_thermostat_mode
+            state: 'off'
+    action:
+      - service: climate.set_hvac_mode
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          hvac_mode: heat_cool
+      - service: climate.set_temperature
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          target_temp_low: "{{ states('input_number.upstairs_hvac_requested_away_heat') | int(0) }}"
+          target_temp_high: "{{ states('input_number.upstairs_hvac_requested_away_cool') | int(0) }}"
+
+  - alias: "Upstairs HVAC Set Temperatures"
+    trigger:
+      - platform: state
+        entity_id:
+          - input_boolean.upstairs_hvac_vacation_mode
+        to: 'off'
+        for: '00:00:05'
+      - platform: state
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+        to: 'on'
+        for: '00:00:05'
+      - platform: state
+        entity_id:
+          - input_number.upstairs_hvac_requested_heat
+          - input_number.upstairs_hvac_requested_cool
+          # Update with offset from thermometers vs thermostat current temp
+          - input_number.upstairs_hvac_requested_offset
+        for: '00:00:05'
+      - platform: state
+        entity_id: climate.upstairs_thermostat_mode
+        from: 'off'
+        for: '00:00:05'
+    mode: queued
+    condition:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: input_boolean.upstairs_hvac_vacation_mode
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+            state: 'on'
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.upstairs_thermostat_mode
+            state: 'off'
+    action:
+      - service: climate.set_hvac_mode
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          hvac_mode: heat_cool
+      - service: climate.set_temperature
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          #target_temp_low: "{{ states('input_number.upstairs_hvac_requested_heat') | int(0) }}"
+          #target_temp_high: "{{ states('input_number.upstairs_hvac_requested_cool') | int(0) }}"
+          # Update with offset from thermometers vs thermostat current temp
+          target_temp_low: "{{ states('sensor.upstairs_hvac_requested_heat_computed') | int(0) }}"
+          target_temp_high: "{{ states('sensor.upstairs_hvac_requested_cool_computed') | int(0) }}"
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,43 @@
+#   group.nws_severe_alerts_my_county
+automation:
+
+  - alias: "HVAC Auto Severe Weather Mode On"
+    trigger:
+      - platform: state
+        entity_id: group.nws_severe_alerts_my_county
+        to: 'on'
+#      - platform: homeassistant
+#        event: start
+    condition:
+      - condition: state
+        entity_id: group.nws_severe_alerts_my_county
+        state: 'on'
+    action:
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.downstairs_hvac_severe_weather_mode
+
+  - alias: "HVAC Auto Severe Weather Mode Off"
+    trigger:
+      - platform: state
+        entity_id: group.nws_severe_alerts_my_county
+        to: 'off'
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id:
+          - input_boolean.upstairs_hvac_severe_weather_mode
+          - input_boolean.downstairs_hvac_severe_weather_mode
+        to: 'on'
+        for: '12:00:00'
+    condition:
+      - condition: state
+        entity_id: group.nws_severe_alerts_my_county
+        state: 'off'
+    action:
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.upstairs_hvac_severe_weather_mode
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.downstairs_hvac_severe_weather_mode
+

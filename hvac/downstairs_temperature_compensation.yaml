@@ -1,0 +1,177 @@
+# Downstairs Thermostat Temperature Compensation
+# This file handles adjusting the setpoint(0) offset up/down to account for room temperature differences
+
+sensor:
+
+  - platform: template
+    sensors:
+      downstairs_temp_offset_realtime:
+        friendly_name: "Downstairs Temp Offset"
+        #entity_id: sensor.time
+        unit_of_measurement: '°F'
+        # if-check because when thermostat is unavailable we get 0 and subtracting room-temp gives bad values
+        # to help humidity (and dehumidifier heating) we will look at the basement weighted average at night, and weighted average all other times
+        value_template: >-
+          {% if  is_state('input_select.downstairs_hvac_daily_cycle','Night') %}
+          {% if ( states('sensor.downstairs_thermostat_temperature') | float(0) ) == 0 or ( states('sensor.downstairs_hvac_zone_weighted_average_basement_temperature') | float(0) ) == 0 %}
+              0
+            {% else %}
+              {{ ( states('sensor.downstairs_thermostat_temperature') | float(0) - states('sensor.downstairs_hvac_zone_weighted_average_basement_temperature') | float(0) ) | round(2,default=0) }}
+            {% endif %}
+          {% else %}
+            {% if ( states('sensor.downstairs_thermostat_temperature') | float(0) ) == 0 or ( states('sensor.downstairs_hvac_zone_weighted_average_temperature') | float(0) ) == 0 %}
+              0
+            {% else %}
+              {{ ( states('sensor.downstairs_thermostat_temperature') | float(0) - states('sensor.downstairs_hvac_zone_weighted_average_temperature') | float(0) ) | round(2,default=0) }}
+            {% endif %}
+          {% endif %}
+
+      downstairs_temp_feelslike_offset_realtime:
+        friendly_name: "Downstairs Temp Feelslike Offset"
+        #entity_id: sensor.time
+        unit_of_measurement: '°F'
+        value_template: >-
+          {% if ( states('sensor.downstairs_thermostat_temperature') | float(0) ) == 0 or ( states('sensor.downstairs_thermostat_humidity_filtered') | float(0) ) == 0 or ( states('sensor.basement_hall_humidity_filtered') | float(0) ) == 0 %}
+            0
+          {% else %}
+            {% set t = states('sensor.downstairs_thermostat_temperature') | float(0) %}
+            {% set rh = (states('sensor.downstairs_thermostat_humidity_filtered') | float(0) + states('sensor.basement_hall_humidity_filtered') | float(0))/2 %}
+            {% set rh = (rh * 1.1) + 8 %}
+            {% set hi = 0.5 * (t + 61.0 + ((t-68.0)*1.2) + (rh*0.094))  %}
+            {{ (t - hi) | round(2,default=0) }}
+          {% endif %}
+
+input_number:
+
+  # This will be the target for the thermostat
+  downstairs_hvac_requested_offset:
+    #initial: 0
+    min: -5
+    max: 5
+
+  downstairs_hvac_feelslike_offset:
+    #initial: 0
+    min: -5
+    max: 5
+
+binary_sensor:
+
+  - platform: template
+    sensors:
+     downstairs_temperature_temporary_hold :
+        friendly_name: "Downstairs Temperature Temporary Hold"
+        # If the computed value we would send != the thermostat setpoint(0), temporary hold
+        value_template: >-
+          {{ ( states('sensor.downstairs_hvac_requested_heat_computed') | int(0) != states('sensor.downstairs_hvac_set_temp_heating') | int(0) ) or
+             ( states('sensor.downstairs_hvac_requested_cool_computed') | int(0) != states('sensor.downstairs_hvac_set_temp_cooling') | int(0) ) }}
+          
+
+automation:
+
+  - alias: "Downstairs HVAC Set Offset"
+    trigger:
+      # Trigger every 10 minutets (avoid short-cycle)
+      #- platform: time_pattern
+      #  minutes: '/10'
+      # Trigger when temp offset changes
+      - platform: state
+        entity_id:
+          - sensor.downstairs_temp_offset_realtime
+      # Trigger if we go outt of vacation or temp-hold modes
+      - platform: state
+        entity_id:
+          - input_boolean.downstairs_hvac_vacation_mode
+          - binary_sensor.downstairs_hvac_temporary_hold
+        to: 'off'
+      # Trigger if thermostat is turned off to on
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        from: 'off'
+    condition:
+      # Condition if not on temp-hold
+      - condition: state
+        entity_id: binary_sensor.downstairs_temperature_temporary_hold
+        state: 'off'
+      # Condition if not on vacation
+      - condition: state
+        entity_id: input_boolean.downstairs_hvac_vacation_mode
+        state: 'off'
+      # Condition thermostat is not off
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.downstairs_thermostat_mode
+            state: 'off'
+      # Condition existing value not equal to new value
+      # Instead of rounding, we use 'int(0)' because we want round closer to zero ('floor' rounds wrong way on negative)
+      - condition: template
+        value_template: "{{ states('input_number.downstairs_hvac_requested_offset') | int(0) != states('sensor.downstairs_temp_offset_realtime') | int(0) }}"
+      # Condition has been more than 10 minutes (600 sec) since update
+      - condition: template
+        value_template: "{{ (now() - states.input_number.downstairs_hvac_requested_offset.last_changed).total_seconds() | round(0,default=0) > 600}}"
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_requested_offset
+          # Instead of rounding, we use 'int(0)' because we want round closer to zero ('floor' rounds wrong way on negative)
+          value:  "{{ states('sensor.downstairs_temp_offset_realtime') | int(0) }}"
+
+  - alias: "Downstairs HVAC Set Feelslike Offset"
+    trigger:
+      # Trigger when temp offset changes
+      - platform: state
+        entity_id:
+          - sensor.downstairs_temp_feelslike_offset_realtime
+      # Trigger if we go out of vacation or temp-hold modes
+      - platform: state
+        entity_id:
+          - input_boolean.downstairs_hvac_vacation_mode
+          - binary_sensor.downstairs_hvac_temporary_hold
+        to: 'off'
+      # Trigger if thermostat is turned off to on
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        from: 'off'
+    condition:
+      # Condition if not on temp-hold
+      - condition: state
+        entity_id: binary_sensor.downstairs_temperature_temporary_hold
+        state: 'off'
+      # Condition if not on vacation
+      - condition: state
+        entity_id: input_boolean.downstairs_hvac_vacation_mode
+        state: 'off'
+      # Condition thermostat is not off
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.downstairs_thermostat_mode
+            state: 'off'
+      # Condition existing value not equal to new value
+      # Instead of rounding, we use 'int(0)' because we want round closer to zero ('floor' rounds wrong way on negative)
+      - condition: template
+        value_template: "{{ states('input_number.downstairs_hvac_feelslike_offset') | int(0) != states('sensor.downstairs_hvac_feelslike_offset') | int(0) }}"
+      # Condition has been more than 10 minutes (600 sec) since update
+      - condition: template
+        value_template: "{{ (now() - states.input_number.downstairs_hvac_feelslike_offset.last_changed).total_seconds() | round(0,default=0) > 600 }}"
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_feelslike_offset
+          # Instead of rounding, we use 'int(0)' because we want round closer to zero ('floor' rounds wrong way on negative)
+          value:  "{{ states('sensor.downstairs_temp_feelslike_offset_realtime') | int(0) }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

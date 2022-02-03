@@ -1,0 +1,115 @@
+# Downstairs Thermostat Temperature Compensation
+# This file handles adjusting the setpoint(0) offset up/down to account for room temperature differences
+
+sensor:
+
+  - platform: template
+    sensors:
+
+      downstairs_hvac_manual_cool_adj_realtime:
+        friendly_name: "Downstairs HVAC Manual Cool Adjustment"
+        unit_of_measurement: '°F'
+        # We subtract off the manual adjustment so we get "all the other things computed" except the one we are computing here.  This makes it more modular than re-computing..
+        value_template: >-
+          {{ states('sensor.downstairs_hvac_set_temp_cooling') | int(0) - (states('sensor.downstairs_hvac_requested_cool_computed') | int(0) - states('input_number.downstairs_hvac_manual_cool_adj') | int(0)) }}
+
+      downstairs_hvac_manual_heat_adj_realtime:
+        friendly_name: "Downstairs HVAC Manual Heat Adjustment"
+        unit_of_measurement: '°F'
+        # We subtract off the manual adjustment so we get "all the other things computed" except the one we are computing here.  This makes it more modular than re-computing..
+        value_template: >-
+          {{ states('sensor.downstairs_hvac_set_temp_heating') | int(0) - (states('sensor.downstairs_hvac_requested_heat_computed') | int(0) - states('input_number.downstairs_hvac_manual_heat_adj') | int(0)) }}
+
+input_number:
+
+  # This is the amount the thermostat was manually pushed up/down
+  downstairs_hvac_manual_cool_adj:
+    name: Downstairs HVAC Manual Cool Adjustment
+    icon: hass:snowflake
+    #initial: 0
+    min: -5
+    max: 5
+
+  downstairs_hvac_manual_heat_adj:
+    name: Downstairs HVAC Manual Heat Adjustment
+    icon: hass:fire
+    #initial: 0
+    min: -5
+    max: 5
+
+
+automation:
+
+  - alias: "Downstairs HVAC Set Manual Adj Value"
+    trigger:
+      # Trigger when manual temp changes
+      - platform: state
+        entity_id:
+          - sensor.downstairs_hvac_set_temp_cooling
+          - sensor.downstairs_hvac_set_temp_heating
+        for: '00:01:00'
+    mode: queued
+    condition:
+      # Condition if not on vacation
+      - condition: state
+        entity_id: input_boolean.downstairs_hvac_vacation_mode
+        state: 'off'
+      # Condition thermostat is not off
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: climate.downstairs_thermostat_mode
+            state: 'off'
+      # Condition existing value not equal to new value
+      - condition: or
+        conditions:
+          - condition: template
+            value_template: "{{ states('input_number.downstairs_hvac_manual_cool_adj') | int(0) != states('sensor.downstairs_hvac_manual_cool_adj_realtime') | int(0) }}"
+          - condition: template
+            value_template: "{{ states('input_number.downstairs_hvac_manual_heat_adj') | int(0) != states('sensor.downstairs_hvac_manual_heat_adj_realtime') | int(0) }}"
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_manual_cool_adj 
+          value:  "{{ states('sensor.downstairs_hvac_manual_cool_adj_realtime') | int(0) }}"
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_manual_heat_adj 
+          value:  "{{ states('sensor.downstairs_hvac_manual_heat_adj_realtime') | int(0) }}"
+
+
+  - alias: "Downstairs HVAC Clear Manual Adj Value"
+    trigger:
+      # Trigger when programmed temp changes
+      - platform: state
+        entity_id:
+          - input_number.downstairs_hvac_requested_cool
+          - input_number.downstairs_hvac_requested_heat
+      # Trigger if we go in/out of vacation or temp-hold modes
+      - platform: state
+        entity_id:
+          - input_boolean.downstairs_hvac_vacation_mode
+          - binary_sensor.downstairs_hvac_temporary_hold
+      # Trigger if thermostat is turned off to on
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        from: 'off'
+      - platform: homeassistant
+        event: start
+    mode: queued
+    action:
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_manual_cool_adj 
+          value:  0
+      - service: input_number.set_value
+        data:
+          entity_id: input_number.downstairs_hvac_manual_heat_adj 
+          value:  0
+
+
+
+
+
+
+

@@ -1,0 +1,68 @@
+sensor:
+  - platform: template
+    sensors:
+      upstairs_thermostat_relative_humidity_corrected:
+        friendly_name: Upstairs Thermostat Humidity
+        unit_of_measurement: '%'
+        device_class: humidity
+        value_template: >-
+          {% if states('sensor.upstairs_thermostat_relative_humidity') | float(-1) >= 0 and states('sensor.upstairs_thermostat_relative_humidity') | float(999) <= 100 %}
+            {{ states('sensor.upstairs_thermostat_relative_humidity') }}
+          {% else %}
+            {{ states('sensor.upstairs_thermostat_relative_humidity_corrected') }}
+          {% endif %}
+
+      downstairs_thermostat_relative_humidity_corrected:
+        friendly_name: Downstairs Thermostat Humidity
+        unit_of_measurement: '%'
+        device_class: humidity
+        value_template: >-
+          {% if states('sensor.downstairs_thermostat_relative_humidity') | float(-1) >= 0 and states('sensor.downstairs_thermostat_relative_humidity') | float(999) <= 100 %}
+            {{ states('sensor.downstairs_thermostat_relative_humidity') }}
+          {% else %}
+            {{ states('sensor.downstairs_thermostat_relative_humidity_corrected') }}
+          {% endif %}
+
+
+  - platform: filter
+    name: "Upstairs Thermostat Temperature Filtered"
+    entity_id: sensor.upstairs_thermostat_temperature
+    filters:
+      - filter: outlier
+        window_size: 3
+        radius: 10.0
+      - filter: time_simple_moving_average
+        window_size: 00:01
+        precision: 1
+  - platform: filter
+    name: "Upstairs Thermostat Humidity Filtered"
+    entity_id: sensor.upstairs_thermostat_relative_humidity
+    filters:
+      - filter: outlier
+        window_size: 3
+        radius: 10.0
+      - filter: time_simple_moving_average
+        window_size: 00:01
+        precision: 1
+
+  - platform: filter
+    name: "Downstairs Thermostat Temperature Filtered"
+    entity_id: sensor.downstairs_thermostat_temperature
+    filters:
+      - filter: outlier
+        window_size: 3
+        radius: 10.0
+      - filter: time_simple_moving_average
+        window_size: 00:01
+        precision: 1
+  - platform: filter
+    name: "Downstairs Thermostat Humidity Filtered"
+    entity_id: sensor.downstairs_thermostat_relative_humidity
+    filters:
+      - filter: outlier
+        window_size: 3
+        radius: 10.0
+      - filter: time_simple_moving_average
+        window_size: 00:01
+        precision: 1
+

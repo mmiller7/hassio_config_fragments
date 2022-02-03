@@ -1,0 +1,71 @@
+sensor:
+
+  # Split out bedroom temperatures for rooms we primarialy care about temperature in
+  # This allows prioritization of comfort for sleeping only these rooms
+
+  - platform: min_max
+    name: bedroom_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+
+  - platform: min_max
+    name: bedroom_min_temperature
+    type: min
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+
+  - platform: min_max
+    name: bedroom_max_temperature
+    type: max
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+
+
+
+  - platform: min_max
+    name: upstairs_rooms_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+      - sensor.bedroom3_temperature_filtered
+      - sensor.master_bed_temperature_filtered
+
+  - platform: min_max
+    name: upstairs_rooms_weighted_average_temperature
+    type: mean
+    entity_ids:
+      # Bedrooms weighted more
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom1_temperature_filtered
+      # This room seems to vary more, weight it more
+      - sensor.bedroom2_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+      # Other rooms
+      - sensor.bedroom3_temperature_filtered
+      - sensor.master_bed_temperature_filtered
+
+  - platform: min_max
+    name: upstairs_rooms_min_temperature
+    type: min
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+      - sensor.bedroom3_temperature_filtered
+      - sensor.master_bed_temperature_filtered
+
+  - platform: min_max
+    name: upstairs_rooms_max_temperature
+    type: max
+    entity_ids:
+      - sensor.bedroom1_temperature_filtered
+      - sensor.bedroom2_temperature_filtered
+      - sensor.bedroom3_temperature_filtered
+      - sensor.master_bed_temperature_filtered
+
+

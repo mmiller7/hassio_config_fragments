@@ -1,0 +1,14 @@
+Heat index equation taken from:
+https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml
+
+Solved for input temperature from:
+https://www.mathsite.org/maths-factors/converting-fractions/rearranging-equations-online.html#c=simplify_algstepssimplify&v217=F%2520%253D%25200.5%2520*%2520%257BT%2520%2B%252061.0%2520%2B%2520%255B%2528T-68.0%2529*1.2%255D%2520%2B%2520%2528H*0.094%2529%257D%2520&v218=T
+
+
+Old way...
+          value: >-
+            {% set feelTemp = 73 %}
+            {% set humidity = states('sensor.upstairs_thermostat_humidity_filtered') | float(0) %}
+            {% set humidityAdj = (( (humidity) * 0.9) + 12 ) %}
+            {% set setTemp = -(47*humidityAdj-1000*feelTemp-10300)/(1100) %}
+            {{ setTemp | int(0) }}

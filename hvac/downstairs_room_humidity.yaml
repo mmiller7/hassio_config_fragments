@@ -1,0 +1,85 @@
+sensor:
+
+  - platform: min_max
+    name: main_floor_average_humidity
+    type: mean
+    entity_ids:
+      - sensor.downstairs_thermostat_humidity_filtered
+      - sensor.sun_room_humidity_filtered
+      - sensor.dining_room_humidity_filtered
+      - sensor.office_humidity_filtered
+      - sensor.livingroom_humidity_filtered
+
+  - platform: min_max
+    name: main_floor_min_humidity
+    type: min
+    entity_ids:
+      - sensor.downstairs_thermostat_humidity_filtered
+      - sensor.sun_room_humidity_filtered
+      - sensor.dining_room_humidity_filtered
+      - sensor.office_humidity_filtered
+      - sensor.livingroom_humidity_filtered
+
+  - platform: min_max
+    name: main_floor_max_humidity
+    type: max
+    entity_ids:
+      - sensor.downstairs_thermostat_humidity_filtered
+      - sensor.sun_room_humidity_filtered
+      - sensor.dining_room_humidity_filtered
+      - sensor.office_humidity_filtered
+      - sensor.livingroom_humidity_filtered
+
+
+
+  - platform: min_max
+    name: basement_rooms_average_humidity
+    type: mean
+    entity_ids:
+      - sensor.basement_bed_rm_humidity_filtered
+      - sensor.server_room_humidity_filtered
+      - sensor.basement_hall_humidity_filtered
+      - sensor.basement_rear_rm_humidity_filtered
+
+  - platform: min_max
+    name: basement_rooms_min_humidity
+    type: min
+    entity_ids:
+      - sensor.basement_bed_rm_humidity_filtered
+      - sensor.server_room_humidity_filtered
+      - sensor.basement_hall_humidity_filtered
+      - sensor.basement_rear_rm_humidity_filtered
+
+  - platform: min_max
+    name: basement_rooms_max_humidity
+    type: max
+    entity_ids:
+      - sensor.basement_bed_rm_humidity_filtered
+      - sensor.server_room_humidity_filtered
+      - sensor.basement_hall_humidity_filtered
+      - sensor.basement_rear_rm_humidity_filtered
+
+
+
+  - platform: min_max
+    name: downstairs_hvac_zone_average_humidity
+    type: mean
+    entity_ids:
+      - sensor.main_floor_average_humidity
+      - sensor.basement_rooms_average_humidity
+
+  - platform: min_max
+    name: downstairs_hvac_zone_min_humidity
+    type: min
+    entity_ids:
+      - sensor.main_floor_average_humidity
+      - sensor.basement_rooms_average_humidity
+
+  - platform: min_max
+    name: downstairs_hvac_zone_max_humidity
+    type: max
+    entity_ids:
+      - sensor.main_floor_average_humidity
+      - sensor.basement_rooms_average_humidity
+
+

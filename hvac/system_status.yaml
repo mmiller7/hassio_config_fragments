@@ -1,0 +1,65 @@
+binary_sensor:
+
+  - platform: template
+    sensors:
+
+      upstairs_hvac_aux_heat:
+        friendly_name: "Upstairs HVAC Aux Heat"
+        value_template: >-
+          {{ states('sensor.iotawatt_input_upstairs_furnace') | int(0) > 5000 }}
+
+      downstairs_hvac_aux_heat:
+        friendly_name: "Downstairs HVAC Aux Heat"
+        value_template: >-
+          {{ states('sensor.iotawatt_input_downstairs_furnace') | int(0) > 5000 }}
+
+
+sensor:
+
+  - platform: template
+    sensors:
+
+      upstairs_hvac_status:
+        friendly_name: "Upstairs HVAC Status"
+        #entity_id: sensor.time
+        value_template: >-
+          {% if is_state('binary_sensor.upstairs_hvac_aux_heat','on') %}
+            aux_heating
+          {% else %}
+            {{ state_attr('climate.upstairs_thermostat_mode','hvac_action') }}
+          {% endif %}
+
+      downstairs_hvac_status:
+        friendly_name: "Downstairs HVAC Status"
+        #entity_id: sensor.time
+        value_template: >-
+          {% if is_state('binary_sensor.downstairs_hvac_aux_heat','on') %}
+            aux_heating
+          {% else %}
+            {{ state_attr('climate.downstairs_thermostat_mode','hvac_action') }}
+          {% endif %}
+
+
+
+
+      upstairs_hvac_set_temp_cooling:
+        friendly_name: "Upstairs HVAC Cooling Temp"
+        value_template: >-
+          {{ state_attr('climate.upstairs_thermostat_mode','target_temp_high') }}
+
+      upstairs_hvac_set_temp_heating:
+        friendly_name: "Upstairs HVAC Heating Temp"
+        value_template: >-
+          {{ state_attr('climate.upstairs_thermostat_mode','target_temp_low') }}
+
+
+      downstairs_hvac_set_temp_cooling:
+        friendly_name: "Downstairs HVAC Cooling Temp"
+        value_template: >-
+          {{ state_attr('climate.downstairs_thermostat_mode','target_temp_high') }}
+
+      downstairs_hvac_set_temp_heating:
+        friendly_name: "Downstairs HVAC Heating Temp"
+        value_template: >-
+          {{ state_attr('climate.downstairs_thermostat_mode','target_temp_low') }}
+

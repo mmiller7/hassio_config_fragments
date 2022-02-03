@@ -1,0 +1,243 @@
+sensor:
+
+  - platform: template
+    sensors:
+
+      downstairs_hvac_fan_status:
+        friendly_name: "Downstairs HVAC Fan Status"
+        #entity_id: sensor.time
+        value_template: >-
+          {{ state_attr('climate.downstairs_thermostat_mode','fan_action') }}
+
+
+input_boolean:
+  # This will be a "fan on" to keep the fan running 24x7
+  downstairs_hvac_fan_on_manual_hold:
+    name: Downstairs HVAC Fan On Manual Hold
+    icon: hass:fan
+
+
+
+binary_sensor:
+
+  - platform: template
+    sensors:
+
+      downstairs_hvac_fan_idle_cycle:
+        friendly_name: "Downstairs HVAC Fan Idle Cycle"
+        delay_on: '04:00:00'
+        delay_off: '02:00:00'
+        value_template: >-
+          {{ is_state('sensor.downstairs_hvac_fan_status','Idle') and
+             is_state('binary_sensor.downstairs_hvac_fan_idle_cycle','off') }}
+
+      downstairs_hvac_fan_manual_on:
+        friendly_name: "Downstairs HVAC Fan Manual On"
+        delay_on: '00:01:00'
+        delay_off: '01:00:00'
+        value_template: >-
+          {{ state_attr('climate.downstairs_thermostat_mode','fan_mode') == 'On Low' and
+             is_state('group.downstairs_hvac_fan_on_conditions','off') }}
+
+      main_floor_high_temp_difference:
+        friendly_name: "Main Floor High Temp Difference"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ (states('sensor.main_floor_max_temperature')|float(0) - states('sensor.main_floor_min_temperature')|float(0)) > 3 }}
+
+      basement_rooms_high_temp_difference:
+        friendly_name: "Basement Rooms High Temp Difference"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ (states('sensor.basement_rooms_max_temperature')|float(0) - states('sensor.basement_rooms_min_temperature')|float(0)) > 3 }}
+
+      basement_main_floor_high_temp_difference:
+        friendly_name: "Basement Main Floor High Temp Difference"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ (states('sensor.main_floor_average_temperature')|float(0) - states('sensor.basement_rooms_average_temperature')|float(0)) | abs > 2 }}
+
+      downstairs_set_temp_near_outside_temp:
+        friendly_name: "Downstairs Set Temp Near Outside Temp"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.outside_rear_sensor_age')|int(0) < 1800 and
+             (states('sensor.outside_rear_temperature')|float(0) - states('sensor.downstairs_hvac_set_temp_cooling')|float(0)) < 5 and
+             (states('sensor.outside_rear_temperature')|float(0) - states('sensor.downstairs_hvac_set_temp_heating')|float(0)) > -10 }}
+
+      downstairs_can_do_passive_cooling:
+        friendly_name: "Downstairs Can Do Passive Cooling"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.outside_rear_sensor_age')|int(0) < 1800 and
+             states('sensor.outside_rear_temperature')|float(0) < states('sensor.main_floor_average_temperature')|float(0) and
+             states('sensor.main_floor_average_temperature')|float(0) > ((states('sensor.downstairs_hvac_set_temp_heating')|float(0) + (states('sensor.downstairs_hvac_set_temp_cooling')|float(0)*2))/3) }}
+
+      downstairs_can_do_passive_heating:
+        friendly_name: "Downstairs Can Do Passive Heating"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.outside_rear_sensor_age')|int(0) < 1800 and
+             states('sensor.outside_rear_temperature')|float(0) > states('sensor.main_floor_average_temperature')|float(0) and
+             states('sensor.main_floor_average_temperature')|float(0) < (((states('sensor.downstairs_hvac_set_temp_heating')|float(0)*2) + states('sensor.downstairs_hvac_set_temp_cooling')|float(0))/3) }}
+
+      downstairs_door_open_recently:
+        friendly_name: "Downstairs Door Open Recently"
+        delay_on: '00:00:10'
+        delay_off: '00:30:00'
+        value_template: >-
+          {{ is_state('binary_sensor.back_door','on') or
+             is_state('binary_sensor.front_door','on') or
+             is_state('binary_sensor.basement_door','on') }}
+
+      downstairs_humidifier_run_fan:
+        friendly_name: "Downstairs Humidifier Run Fan"
+        # delay_on: '00:00:00'
+        delay_off: '00:00:30'
+        value_template: >-
+          {{ is_state('binary_sensor.downstairs_hvac_humidifier_running','on') and
+             states('sensor.indoor_projected_night_humidity') | float(0) < 50.0 and
+             states('sensor.outdoor_humidity_coming_inside') | float(0) < 60.0 and
+             states('sensor.downstairs_hvac_zone_average_humidity') | float(0) < 45.0 and
+             states('sensor.downstairs_hvac_zone_max_humidity') | float(0) < 48.0 }}
+
+group:
+
+  downstairs_hvac_fan_on_conditions:
+    name: "Downstairs HVAC Fan On Conditions"
+    entities:
+      - binary_sensor.main_floor_high_temp_difference
+      - binary_sensor.basement_rooms_high_temp_difference
+      - binary_sensor.basement_main_floor_high_temp_difference
+      - binary_sensor.downstairs_can_do_passive_cooling
+      - binary_sensor.downstairs_can_do_passive_heating
+      - binary_sensor.downstairs_hvac_fan_manual_on
+      - binary_sensor.downstairs_door_open_recently
+      - binary_sensor.downstairs_humidifier_run_fan
+      - input_boolean.downstairs_hvac_fan_on_manual_hold
+
+  downstairs_hvac_fan_circ_conditions:
+    name: "Downstairs HVAC Fan Circ Conditions"
+    entities:
+      - binary_sensor.downstairs_hvac_fan_idle_cycle
+      - binary_sensor.downstairs_set_temp_near_outside_temp
+
+automation:
+
+  - alias: "Downstairs Thermostat Fan Cycle On"
+    trigger:
+      - platform: state
+        entity_id: group.downstairs_hvac_fan_on_conditions
+        to: 'on'
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.downstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.downstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+        for: '00:05:00'
+    condition:
+      - condition: state
+        entity_id: group.downstairs_hvac_fan_on_conditions
+        state: 'on'
+      - condition: state
+        entity_id: climate.downstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.downstairs_thermostat_mode
+          fan_mode: On Low
+
+  - alias: "Downstairs Thermostat Fan Cycle Circ"
+    trigger:
+      - platform: state
+        entity_id: group.downstairs_hvac_fan_on_conditions
+        to: 'off'
+      - platform: state
+        entity_id: group.downstairs_hvac_fan_circ_conditions
+        to: 'on'
+      - platform: state
+        entity_id: sensor.downstairs_hvac_fan_status
+        to: 'Running'
+        for:
+          hours: 1
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.downstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.downstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+        for: '00:10:00'
+    condition:
+      - condition: state
+        entity_id: group.downstairs_hvac_fan_on_conditions
+        state: 'off'
+      - condition: state
+        entity_id: group.downstairs_hvac_fan_circ_conditions
+        state: 'on'
+      - condition: state
+        entity_id: climate.downstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.downstairs_thermostat_mode
+          fan_mode: Circulate
+
+  - alias: "Downstairs Thermostat Fan Cycle Off"
+    trigger:
+      - platform: state
+        entity_id: group.downstairs_hvac_fan_on_conditions
+        to: 'off'
+      - platform: state
+        entity_id: group.downstairs_hvac_fan_circ_conditions
+        to: 'off'
+      - platform: state
+        entity_id: sensor.downstairs_hvac_fan_status
+        to: 'Running'
+        for:
+          hours: 1
+      - platform: state
+        entity_id: climate.downstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.downstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.downstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+    condition:
+      - condition: or
+        conditions:
+          - condition: template
+            value_template: '{{ trigger.from_state.state == "cooling" and trigger.to_state.state == "idle" }}'
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: group.downstairs_hvac_fan_on_conditions
+                state: 'off'
+              - condition: state
+                entity_id: group.downstairs_hvac_fan_circ_conditions
+                state: 'off'
+      - condition: state
+        entity_id: climate.downstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.downstairs_thermostat_mode
+          fan_mode: Auto Low
+

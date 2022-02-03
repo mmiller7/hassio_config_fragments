@@ -1,0 +1,215 @@
+sensor:
+
+  - platform: template
+    sensors:
+
+      upstairs_hvac_fan_status:
+        friendly_name: "Upstairs HVAC Fan Status"
+        #entity_id: sensor.time
+        value_template: >-
+          {{ state_attr('climate.upstairs_thermostat_mode','fan_action') }}
+
+
+input_boolean:
+  # This will be a "fan on" to keep the fan running 24x7
+  upstairs_hvac_fan_on_manual_hold:
+    name: Upstairs HVAC Fan On Manual Hold
+    icon: hass:fan
+
+
+
+binary_sensor:
+
+  - platform: template
+    sensors:
+
+      upstairs_hvac_fan_idle_cycle:
+        friendly_name: "Upstairs HVAC Fan Idle Cycle"
+        delay_on: '04:00:00'
+        delay_off: '02:00:00'
+        value_template: >-
+          {{ is_state('sensor.upstairs_hvac_fan_status','Idle') and
+             is_state('binary_sensor.upstairs_hvac_fan_idle_cycle','off') }}
+
+      upstairs_hvac_fan_manual_on:
+        friendly_name: "Upstairs HVAC Fan Manual On"
+        delay_on: '00:01:00'
+        delay_off: '01:00:00'
+        value_template: >-
+          {{ state_attr('climate.upstairs_thermostat_mode','fan_mode') == 'On Low' and
+             is_state('group.upstairs_hvac_fan_on_conditions','off') }}
+
+      upstairs_rooms_high_temp_difference:
+        friendly_name: "Upstairs Rooms High Temp Difference"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ (states('sensor.upstairs_rooms_max_temperature')|float(0) - states('sensor.upstairs_rooms_min_temperature')|float(0)) > 3 }}
+
+      upstairs_set_temp_near_attic_temp:
+        friendly_name: "Upstairs Set Temp Near Attic Temp"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.attic_sensor_age')|int(0) < 1800 and
+             states('sensor.attic_humidity')|int(0) < 50 and
+             (states('sensor.attic_temperature')|float(0) - states('sensor.upstairs_hvac_set_temp_cooling')|float(0)) < 5 and
+             (states('sensor.attic_temperature')|float(0) - states('sensor.upstairs_hvac_set_temp_heating')|float(0)) > -10 }}
+
+      upstairs_can_do_passive_cooling:
+        friendly_name: "Upstairs Can Do Passive Cooling"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.attic_sensor_age')|int(0) < 1800 and
+             states('sensor.attic_humidity')|int(0) < 50 and
+             states('sensor.attic_temperature')|float(0) < states('sensor.upstairs_rooms_average_temperature')|float(0) and
+             states('sensor.upstairs_rooms_average_temperature')|float(0) > ((states('sensor.upstairs_hvac_set_temp_heating')|float(0) + (states('sensor.upstairs_hvac_set_temp_cooling')|float(0)*2))/3) }}
+
+      upstairs_can_do_passive_heating:
+        friendly_name: "Upstairs Can Do Passive Heating"
+        delay_on: '00:05:00'
+        delay_off: '00:10:00'
+        value_template: >-
+          {{ states('sensor.attic_sensor_age')|int(0) < 1800 and
+             states('sensor.attic_temperature')|float(0) > states('sensor.upstairs_rooms_average_temperature')|float(0) and
+             states('sensor.upstairs_rooms_average_temperature')|float(0) < (((states('sensor.upstairs_hvac_set_temp_heating')|float(0)*2) + states('sensor.upstairs_hvac_set_temp_cooling')|float(0))/3) }}
+
+      upstairs_bathroom_exhaust_fan_on:
+        friendly_name: "Upstairs Bathroom Exhaust Fan On"
+        delay_on: '00:01:00'
+        delay_off: '00:05:00'
+        value_template: >-
+          {{  is_state('switch.upstairs_hall_bath_exhaust_fan_switch','on') }}
+
+group:
+
+  upstairs_hvac_fan_on_conditions:
+    name: "Upstairs HVAC Fan On Conditions"
+    entities:
+      - binary_sensor.upstairs_rooms_high_temp_difference
+      - binary_sensor.upstairs_can_do_passive_cooling
+      - binary_sensor.upstairs_can_do_passive_heating
+      - binary_sensor.upstairs_hvac_fan_manual_on
+      - input_boolean.upstairs_hvac_fan_on_manual_hold
+      - binary_sensor.upstairs_bathroom_exhaust_fan_on
+
+  upstairs_hvac_fan_circ_conditions:
+    name: "Upstairs HVAC Fan Circ Conditions"
+    entities:
+      - binary_sensor.upstairs_set_temp_near_attic_temp
+      - binary_sensor.upstairs_hvac_fan_idle_cycle
+
+automation:
+
+  - alias: "Upstairs Thermostat Fan Cycle On"
+    trigger:
+      - platform: state
+        entity_id: group.upstairs_hvac_fan_on_conditions
+        to: 'on'
+      - platform: state
+        entity_id: climate.upstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.upstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.upstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+        for: '00:05:00'
+    condition:
+      - condition: state
+        entity_id: group.upstairs_hvac_fan_on_conditions
+        state: 'on'
+      - condition: state
+        entity_id: climate.upstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          fan_mode: On Low
+
+  - alias: "Upstairs Thermostat Fan Cycle Circ"
+    trigger:
+      - platform: state
+        entity_id: group.upstairs_hvac_fan_on_conditions
+        to: 'off'
+      - platform: state
+        entity_id: group.upstairs_hvac_fan_circ_conditions
+        to: 'on'
+      - platform: state
+        entity_id: sensor.upstairs_hvac_fan_status
+        to: 'Running'
+        for:
+          hours: 1
+      - platform: state
+        entity_id: climate.upstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.upstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.upstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+        for: '00:10:00'
+    condition:
+      - condition: state
+        entity_id: group.upstairs_hvac_fan_on_conditions
+        state: 'off'
+      - condition: state
+        entity_id: group.upstairs_hvac_fan_circ_conditions
+        state: 'on'
+      - condition: state
+        entity_id: climate.upstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          fan_mode: Circulate
+
+  - alias: "Upstairs Thermostat Fan Cycle Off"
+    trigger:
+      - platform: state
+        entity_id: group.upstairs_hvac_fan_on_conditions
+        to: 'off'
+      - platform: state
+        entity_id: group.upstairs_hvac_fan_circ_conditions
+        to: 'off'
+      - platform: state
+        entity_id: sensor.upstairs_hvac_fan_status
+        to: 'Running'
+        for:
+          hours: 1
+      - platform: state
+        entity_id: climate.upstairs_thermostat_mode
+        to: 'heat_cool'
+      - platform: state
+        entity_id: input_select.upstairs_hvac_daily_cycle
+      - platform: state
+        entity_id: sensor.upstairs_hvac_status
+        from: 'cooling'
+        to: 'idle'
+    condition:
+      - condition: or
+        conditions:
+          - condition: template
+            value_template: '{{ trigger.from_state.state == "cooling" and trigger.to_state.state == "idle" }}'
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: group.upstairs_hvac_fan_on_conditions
+                state: 'off'
+              - condition: state
+                entity_id: group.upstairs_hvac_fan_circ_conditions
+                state: 'off'
+      - condition: state
+        entity_id: climate.upstairs_thermostat_mode
+        state: 'heat_cool'
+    action:
+      - service: climate.set_fan_mode
+        data:
+          entity_id: climate.upstairs_thermostat_mode
+          fan_mode: Auto Low
+

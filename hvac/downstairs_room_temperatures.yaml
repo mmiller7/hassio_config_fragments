@@ -1,0 +1,99 @@
+sensor:
+
+  - platform: min_max
+    name: main_floor_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.sun_room_temperature_filtered
+      - sensor.dining_room_temperature_filtered
+      - sensor.office_temperature_filtered
+      - sensor.livingroom_temperature_filtered
+
+  - platform: min_max
+    name: main_floor_min_temperature
+    type: min
+    entity_ids:
+      - sensor.sun_room_temperature_filtered
+      - sensor.dining_room_temperature_filtered
+      - sensor.office_temperature_filtered
+      - sensor.livingroom_temperature_filtered
+
+  - platform: min_max
+    name: main_floor_max_temperature
+    type: max
+    entity_ids:
+      - sensor.sun_room_temperature_filtered
+      - sensor.dining_room_temperature_filtered
+      - sensor.office_temperature_filtered
+      - sensor.livingroom_temperature_filtered
+
+
+
+  - platform: min_max
+    name: basement_rooms_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.basement_bed_rm_temperature_filtered
+      - sensor.server_room_temperature_filtered
+      - sensor.basement_hall_temperature_filtered
+      - sensor.basement_rear_rm_temperature_filtered
+
+  - platform: min_max
+    name: basement_rooms_min_temperature
+    type: min
+    entity_ids:
+      - sensor.basement_bed_rm_temperature_filtered
+      - sensor.server_room_temperature_filtered
+      - sensor.basement_hall_temperature_filtered
+      - sensor.basement_rear_rm_temperature_filtered
+
+  - platform: min_max
+    name: basement_rooms_max_temperature
+    type: max
+    entity_ids:
+      - sensor.basement_bed_rm_temperature_filtered
+      - sensor.server_room_temperature_filtered
+      - sensor.basement_hall_temperature_filtered
+      - sensor.basement_rear_rm_temperature_filtered
+
+
+
+  - platform: min_max
+    name: downstairs_hvac_zone_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.main_floor_average_temperature
+      - sensor.basement_rooms_average_temperature
+
+  - platform: min_max
+    name: downstairs_hvac_zone_weighted_average_temperature
+    type: mean
+    entity_ids:
+      - sensor.main_floor_average_temperature
+      - sensor.main_floor_average_temperature
+      - sensor.basement_rooms_average_temperature
+
+  - platform: min_max
+    name: downstairs_hvac_zone_weighted_average_basement_temperature
+    type: mean
+    entity_ids:
+      - sensor.main_floor_average_temperature
+      - sensor.basement_rooms_average_temperature
+      - sensor.basement_rooms_average_temperature
+      - sensor.basement_rooms_average_temperature
+
+  - platform: min_max
+    name: downstairs_hvac_zone_min_temperature
+    type: min
+    entity_ids:
+      - sensor.main_floor_average_temperature
+      - sensor.basement_rooms_average_temperature
+
+  - platform: min_max
+    name: downstairs_hvac_zone_max_temperature
+    type: max
+    entity_ids:
+      - sensor.main_floor_average_temperature
+      - sensor.basement_rooms_average_temperature
+
+
