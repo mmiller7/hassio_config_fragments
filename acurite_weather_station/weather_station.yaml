@@ -1,0 +1,400 @@
+# Sensor Package File
+# Acurite Atlas Weather Station
+
+mqtt:
+  binary_sensor:
+
+    # Sensors which are present in every message
+
+    - name: "Wx Station Battery Low"
+      unique_id: "wx_station_battery_low"
+      device_class: battery
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      payload_on: "0"
+      payload_off: "1"
+      value_template: >-
+        {% if value_json.battery_ok == 1 or value_json.battery_ok == 0 %}
+          {{ value_json.battery_ok }}
+        {% else %}
+          {{ states.sensor.basement_rear_rm_battery_ok.state }}
+        {% endif %}
+
+  sensor:
+
+    # rtl_433 debug fields
+
+    - name: "Wx Station RSSI"
+      unique_id: "wx_station_rssi"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'dB'
+      value_template: "{{ value_json.rssi }}"
+    
+    - name: "Wx Station SNR"
+      unique_id: "wx_station_snr"
+      icon: mdi:signal
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'dB'
+      value_template: "{{ value_json.snr }}"
+
+    - name: "Wx Station Noise"
+      unique_id: "wx_station_noise"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'dB'
+      value_template: "{{ value_json.noise }}"
+
+    # Sensors which are present in every message
+
+    - name: "Wx Station Last Message Time"
+      unique_id: "wx_station_last_message_time"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      value_template: "{{ value_json.time }}"
+
+    - name: "Wx Station Lightning Strike Count Raw"
+      unique_id: "wx_station_lightning_strike_count_raw"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'strikes'
+      value_template: "{{ value_json.strike_count }}"
+
+    - name: "Wx Station Lightning Distance"
+      unique_id: "wx_station_lightning_strike_distance"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'miles'
+      value_template: "{{ value_json.strike_distance }}"
+
+    - name: "Wx Station Wind Speed"
+      unique_id: "wx_station_wind_speed"
+      force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'mph'
+      value_template: "{{ value_json.wind_avg_mi_h }}"
+
+    # Sensors which are only present in certain messages
+
+    - name: "Wx Station Humidity"
+      unique_id: "wx_station_humidity"
+      force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: '%'
+      device_class: humidity
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 37 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 37 %}
+          {{ value_json.humidity }}
+        {% else %}
+          {{ states('sensor.wx_station_humidity') }}
+        {% endif %}
+
+    - name: "Wx Station Temperature"
+      unique_id: "wx_station_temperature"
+      force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      # Yes, this really reports in F not C unlike other Acurite sensors
+      unit_of_measurement: '°F'
+      device_class: temperature
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 37 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 37 %}
+          {{ value_json.temperature_F }}
+        {% else %}
+          {{ states('sensor.wx_station_temperature') }}
+        {% endif %}
+
+    - name: "Wx Station Rain Raw"
+      unique_id: "wx_station_rain_raw"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'inches'
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 38 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 38 %}
+          {{ value_json.rain_in }}
+        {% else %}
+          {{ states('sensor.wx_station_rain_raw') }}
+        {% endif %}
+
+    - name: "Wx Station Wind Direction"
+      unique_id: "wx_station_wind_direction"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'deg'
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 38 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 38 %}
+          {{ value_json.wind_dir_deg }}
+        {% else %}
+          {{ states('sensor.wx_station_wind_direction') }}
+        {% endif %}
+
+    - name: "Wx Station Light"
+      unique_id: "wx_station_light"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'lx'
+      device_class: illuminance
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 39 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 39 %}
+          {{ value_json.lux }}
+        {% else %}
+          {{ states('sensor.wx_station_light') }}
+        {% endif %}
+
+    - name: "Wx Station UV"
+      unique_id: "wx_station_uv"
+      #force_update: true
+      state_topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+      unit_of_measurement: 'UV Index'
+      availability:
+        - topic: "homeassistant/sensor/rtl433/Acurite-Atlas/487"
+          value_template: '{{ value_json.message_type == 39 or (this.state | int(-9999)) != -9999 }}'
+          payload_available: "True"
+          payload_not_available: "False"
+      value_template: >-
+        {% if value_json.message_type == 39 %}
+          {{ value_json.uv }}
+        {% else %}
+          {{ states('sensor.wx_station_uv') }}
+        {% endif %}
+
+sensor:
+  - platform: template
+    sensors:
+
+      wx_station_age:
+        unit_of_measurement: "Seconds"
+        friendly_name: "Wx Station Age"
+        icon_template: mdi:clock-alert
+        value_template: >-
+          {{ (now() - states.sensor.wx_station_last_message_time.last_changed).total_seconds() | round(0,default=0) }}
+
+      wx_station_lightning_strike_count_raw_buffered:
+        friendly_name: "Wx Station Lightning Strike Count Raw Buffered"
+        unit_of_measurement: "strikes per hour"
+        icon_template: hass:weather-lightning
+        availability_template: '{{ states("sensor.wx_station_lightning_strike_count_raw") is not in ["unknown", "unavailable"] or (this.state | int(-9999)) != -9999 }}'
+        value_template: >-
+          {% if states('sensor.wx_station_lightning_strike_count_raw') is in ["unknown", "unavailable"] %}
+            {{ states('sensor.wx_station_lightning_strike_count_raw_buffered') }}
+          {% else %}
+            {{ states('sensor.wx_station_lightning_strike_count_raw') }}
+          {% endif %}
+
+      wx_station_rain_raw_buffered:
+        friendly_name: "Wx Station Rain Raw Buffered"
+        unit_of_measurement: "inches"
+        icon_template: hass:weather-rainy
+        availability_template: '{{ states("sensor.wx_station_rain_raw") is not in ["unknown", "unavailable"] or (this.state | int(-9999)) != -9999 }}'
+        value_template: >-
+          {% if states('sensor.wx_station_rain_raw') is in ["unknown", "unavailable"] %}
+            {{ states('sensor.wx_station_rain_raw_buffered') }}
+          {% else %}
+            {{ states('sensor.wx_station_rain_raw') }}
+          {% endif %}
+
+      wx_station_lightning_strikes_hourly:
+        friendly_name: "Wx Station Lightning Strikes Hourly"
+        icon_template: hass:weathter-lightning
+        unit_of_measurement: 'strikes'
+        value_template: "{{ states('sensor.wx_station_lightning_strikes_hourly_meter') }}"
+      wx_station_lightning_strikes_daily:
+        friendly_name: "Wx Station Lightning Strikes Daily"
+        icon_template: hass:weather-lightning
+        unit_of_measurement: 'strikes'
+        value_template: "{{ states('sensor.wx_station_lightning_strikes_daily_meter') }}"
+      wx_station_lightning_strikes_weekly:
+        friendly_name: "Wx Station Lightning Strikes Weekly"
+        icon_template: hass:weather-lightning
+        unit_of_measurement: 'strikes'
+        value_template: "{{ states('sensor.wx_station_lightning_strikes_weekly_meter') }}"
+      wx_station_lightning_strikes_monthly:
+        friendly_name: "Wx Station Lightning Strikes Monthly"
+        icon_template: hass:weather-lightning
+        unit_of_measurement: 'strikes'
+        value_template: "{{ states('sensor.wx_station_lightning_strikes_monthly_meter') }}"
+
+      wx_station_rainfall_hourly:
+        friendly_name: "Wx Station Rainfall Hourly"
+        icon_template: hass:weather-rainy
+        unit_of_measurement: 'inches'
+        value_template: "{{ states('sensor.wx_station_rainfall_hourly_meter') }}"
+      wx_station_rainfall_daily:
+        friendly_name: "Wx Station Rainfall Daily"
+        icon_template: hass:weather-rainy
+        unit_of_measurement: 'inches'
+        value_template: "{{ states('sensor.wx_station_rainfall_daily_meter') }}"
+      wx_station_rainfall_weekly:
+        friendly_name: "Wx Station Rainfall Weekly"
+        icon_template: hass:weather-rainy
+        unit_of_measurement: 'inches'
+        value_template: "{{ states('sensor.wx_station_rainfall_weekly_meter') }}"
+      wx_station_rainfall_monthly:
+        friendly_name: "Wx Station Rainfall Monthly"
+        icon_template: hass:weather-rainy
+        unit_of_measurement: 'inches'
+        value_template: "{{ states('sensor.wx_station_rainfall_monthly_meter') }}"
+
+      wx_station_wind_compass:
+        friendly_name: "Wx Station Wind Compass"
+        icon_template: mdi:compass-outline
+        value_template: >-
+          {% if ( states('sensor.wx_station_wind_direction') | float(-1) > 337.5 and states('sensor.wx_station_wind_direction') | float(999) <= 360 ) or
+                ( states('sensor.wx_station_wind_direction') | float(-1) >= 0    and states('sensor.wx_station_wind_direction') | float(999) < 22.5 ) %}
+            N
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 67.5 %}
+            NE
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 112.5 %}
+            E
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 157.5 %}
+            SE
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 202.5 %}
+            S
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 247.5 %}
+            SW
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 292.5 %}
+            W
+          {% elif states('sensor.wx_station_wind_direction') | float(999) < 337.5 %}
+            NW
+          {% else %}
+            Invalid
+          {% endif %}
+
+      wx_station_uv_index:
+        friendly_name: "Wx Station UV Index"
+        icon_template: mdi:sunglasses
+        value_template: >-
+          {% if states('sensor.wx_station_uv') | float(-1) >= 0 and states('sensor.wx_station_uv') | float(99) <= 2 %}
+            Low
+          {% elif states('sensor.wx_station_uv') | float(99) <= 5 %}
+            Moderate
+          {% elif states('sensor.wx_station_uv') | float(99) <= 7 %}
+            High
+          {% elif states('sensor.wx_station_uv') | float(99) <= 10 %}
+            Very High
+          {% elif states('sensor.wx_station_uv') | float(-1) >= 11 %}
+            Extreme
+          {% else %}
+            Invalid
+          {% endif %}
+
+      wx_station_light_intensity:
+        friendly_name: "Wx Station Light Intensity"
+        #device_class: illuminance
+        icon_template: mdi:brightness-5
+        value_template: >-
+          {% if states('sensor.wx_station_light') | float(-1) >= 0 and states('sensor.wx_station_light') | float(99999) <= 500 %}
+            Dark/Night
+          {% elif states('sensor.wx_station_light') | float(99999) <= 5380 %}
+            Low Light
+          {% elif states('sensor.wx_station_light') | float(99999) <= 21520 %}
+            Overcast/Shade
+          {% elif states('sensor.wx_station_light') | float(99999) <= 43050 %}
+            Daylight
+          {% elif states('sensor.wx_station_light') | float(-1) >= 43051 %}
+            Direct Sun
+          {% else %}
+            Invalid
+          {% endif %}
+
+  - platform: statistics
+    entity_id: sensor.wx_station_wind_speed
+    name: "Wx Station Wind Avg"
+    state_characteristic: average_linear
+    max_age: '00:02:00'
+    # Acurite says the Atlas sends wind every 10 seconds
+    # which is 6x a minute * 60 minutes = 12 per 2m
+    sampling_size: 12
+
+  - platform: statistics
+    entity_id: sensor.wx_station_wind_speed
+    name: "Wx Station Wind Gusts"
+    state_characteristic: value_max
+    max_age: '00:02:00'
+    # Acurite says the Atlas sends wind every 10 seconds
+    # which is 6x a minute * 60 minutes = 12 per 2m
+    sampling_size: 12
+
+  - platform: statistics
+    entity_id: sensor.wx_station_wind_speed
+    name: "Wx Station Wind Max"
+    state_characteristic: value_max
+    max_age: '01:00:00'
+    # Acurite says the Atlas sends wind every 10 seconds
+    # which is 6x a minute * 60 minutes = 360 per hr
+    sampling_size: 360
+
+
+utility_meter:
+  wx_station_lightning_strikes_hourly_meter:
+    source: sensor.wx_station_lightning_strike_count_raw_buffered
+    cycle: hourly
+  wx_station_lightning_strikes_daily_meter:
+    source: sensor.wx_station_lightning_strike_count_raw_buffered
+    cycle: daily
+  wx_station_lightning_strikes_weekly_meter:
+    source: sensor.wx_station_lightning_strike_count_raw_buffered
+    cycle: weekly
+  wx_station_lightning_strikes_monthly_meter:
+    source: sensor.wx_station_lightning_strike_count_raw_buffered
+    cycle: monthly
+
+  wx_station_rainfall_hourly_meter:
+    source: sensor.wx_station_rain_raw_buffered
+    cycle: hourly
+  wx_station_rainfall_daily_meter:
+    source: sensor.wx_station_rain_raw_buffered
+    cycle: daily
+  wx_station_rainfall_weekly_meter:
+    source: sensor.wx_station_rain_raw_buffered
+    cycle: weekly
+  wx_station_rainfall_monthly_meter:
+    source: sensor.wx_station_rain_raw_buffered
+    cycle: monthly
+
+homeassistant:
+  customize:
+    sensor.wx_station_last_message_time:
+      icon: hass:clock
+    sensor.wx_station_wind_speed:
+      icon: hass:weather-windy
+    sensor.wx_station_wind_direction:
+      icon: mdi:compass-outline
+    sensor.wx_station_rain_raw:
+      icon: hass:weather-rainy
+    sensor.wx_station_uv:
+      icon: mdi:sunglasses
+    sensor.wx_station_lightning_strike_count_raw:
+      icon: mdi:weather-lightning
+    sensor.wx_station_lightning_distance:
+      icon: mdi:weather-lightning
+    sensor.wx_station_wind_avg:
+      icon: hass:weather-windy
+    sensor.wx_station_wind_gusts:
+      icon: hass:weather-windy
+    sensor.wx_station_wind_max:
+      icon: hass:weather-windy
