@@ -1,0 +1,37 @@
+# Compute real time (approximate) usage by measuring the
+# time difference between changes and amount of change
+
+sensor:
+  - platform: statistics
+    entity_id: sensor.wx_station_lightning_strike_count_raw_buffered
+    name: "Wx Station Lightning Strike Count Stats Change Second"
+    state_characteristic: change_second
+    sampling_size: 12
+    # age defines how long previous value waits without change assumed zero
+    max_age: '00:30:00'
+    precision: 6
+
+  - platform: template
+    sensors:
+      wx_station_lightning_rate:
+        friendly_name: "Wx Station Lightning Rate"
+        unit_of_measurement: "strikes per hour"
+        icon_template: hass:weather-lightning
+        value_template: >-
+          {% set rate_calc = (states('sensor.wx_station_lightning_strike_count_stats_change_second') | float(0) * 3600) | round(2,default=0) %}
+          {% if state_attr('sensor.wx_station_lightning_strike_count_stats_change_second','buffer_usage_ratio') | int(0) < 1 %}
+            0
+          {% elif state_attr('sensor.wx_station_lightning_strike_count_stats_change_second','buffer_usage_ratio') | int(0) == 1 %}
+            {% if (as_timestamp(now())-as_timestamp(states('sensor.uptime')))/60 < 30 %}
+              0
+            {% else %}
+              1
+            {% endif %}
+          {% else %}
+            {% if rate_calc < 0 or rate_calc > 7200 %}
+               0
+            {% else %}
+              {{ rate_calc }}
+            {% endif %}
+          {% endif %} 
+

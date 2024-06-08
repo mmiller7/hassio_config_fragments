@@ -1,0 +1,40 @@
+# Compute real time (approximate) usage by measuring the
+# time difference between changes and amount of change
+
+sensor:
+  - platform: statistics
+    entity_id: sensor.wx_station_rain_raw_buffered
+    name: "Wx Station Rain Stats Change Second"
+    state_characteristic: change_second
+    sampling_size: 3
+    # age defines how long previous value waits without change assumed zero
+    max_age: '00:30:00'
+    precision: 8
+
+  - platform: statistics
+    entity_id: sensor.wx_station_rain_raw_buffered
+    name: "Wx Station Rain Stats Change Second Fast"
+    state_characteristic: change_second
+    sampling_size: 4
+    # age defines how long previous value waits without change assumed zero
+    max_age: '00:06:00'
+    precision: 8
+
+  - platform: template
+    sensors:
+      wx_station_rainfall_rate:
+        friendly_name: "Wx Station Rainfall Rate"
+        unit_of_measurement: "inches per hour"
+        icon_template: hass:weather-rainy
+        value_template: >-
+          {% set rate_calc = (states('sensor.wx_station_rain_stats_change_second') | float(0) * 3600) | round(2,default=0) %}
+          {% set rate_calc_fast = (states('sensor.wx_station_rain_stats_change_second_fast') | float(0) * 3600) | round(2,default=0) %}
+          {% if rate_calc < 0 or rate_calc > 24 or
+                rate_calc_fast < 0 or rate_calc_fast > 24 %}
+             0
+          {% elif rate_calc_fast > 0.2 %}
+            {{ rate_calc_fast }}
+          {% else %}
+            {{ rate_calc }}
+          {% endif %}
+
