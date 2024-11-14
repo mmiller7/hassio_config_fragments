@@ -59,60 +59,66 @@ do
 	# Main sensor temp/humidity
 
 	# write out data to file
-	echo "  # $name Sensor" >> $s_f
-	echo "  - platform: mqtt" >> $s_f
-	echo "    name: \"$name Temperature\"" >> $s_f
-	echo "    unique_id: \"${unique_id}_temperature\"" >> $s_f
-	echo "    device_class: temperature" >> $s_f
-	echo "    force_update: true" >> $s_f
-	echo "    state_topic: \"$topic_base/$id\"" >> $s_f
-	echo "    unit_of_measurement: '°C'" >> $s_f
-	echo "    value_template: >-" >> $s_f
-	echo "      {% if value_json.temperature_C > $temp_min_C and value_json.temperature_C < $temp_max_C %}" >> $s_f
-	echo "        {{ value_json.temperature_C }}" >> $s_f
-	echo "      {% else %}" >> $s_f
-	echo "        {{ states.sensor.${unique_id}_temperature.state }}" >> $s_f
-	echo "      {% endif %}" >> $s_f
+	# MQTT no longer uses "platform" line
+	echo "    # $name Sensor" >> $s_f
+	echo "    - name: \"$name Temperature\"" >> $s_f
+	echo "      unique_id: \"${unique_id}_temperature\"" >> $s_f
+	echo "      device_class: temperature" >> $s_f
+	echo "      force_update: true" >> $s_f
+	echo "      state_topic: \"$topic_base/$id\"" >> $s_f
+	echo "      availability:" >> $s_f
+	echo "        - topic: \"$topic_base/$id\"" >> $s_f
+	echo "          value_template: \"{{ 'temperature_C' in value_json }}\"" >> $s_f
+	echo "          payload_available: \"True\"" >> $s_f
+	echo "          payload_not_available: \"False\"" >> $s_f
+	echo "      unit_of_measurement: '°C'" >> $s_f
+	echo "      value_template: >-" >> $s_f
+	echo "        {% if value_json.temperature_C > $temp_min_C and value_json.temperature_C < $temp_max_C %}" >> $s_f
+	echo "          {{ value_json.temperature_C }}" >> $s_f
+	echo "        {% else %}" >> $s_f
+	echo "          {{ states.sensor.${unique_id}_temperature.state }}" >> $s_f
+	echo "        {% endif %}" >> $s_f
 
 
-	echo "  - platform: mqtt" >> $s_f
-	echo "    name: \"$name Humidity\"" >> $s_f
-	echo "    unique_id: \"${unique_id}_humidity\"" >> $s_f
-	echo "    device_class: humidity" >> $s_f
-	echo "    icon: hass:water-percent" >> $s_f
-	echo "    force_update: true" >> $s_f
-	echo "    state_topic: \"$topic_base/$id\"" >> $s_f
-	echo "    unit_of_measurement: '%'" >> $s_f
-	echo "    value_template: >-" >> $s_f
-	echo "      {% if value_json.humidity >= 0 and value_json.humidity <= 100 %}" >> $s_f
-	echo "        {{ value_json.humidity }}" >> $s_f
-	echo "      {% else %}" >> $s_f
-	echo "        {{ states.sensor.${unique_id}_humidity.state }}" >> $s_f
-	echo "      {% endif %}" >> $s_f
+	# MQTT no longer uses "platform" line
+	echo "    - name: \"$name Humidity\"" >> $s_f
+	echo "      unique_id: \"${unique_id}_humidity\"" >> $s_f
+	echo "      device_class: humidity" >> $s_f
+	echo "      icon: hass:water-percent" >> $s_f
+	echo "      force_update: true" >> $s_f
+	echo "      state_topic: \"$topic_base/$id\"" >> $s_f
+	echo "      availability:" >> $s_f
+	echo "        - topic: \"$topic_base/$id\"" >> $s_f
+	echo "          value_template: \"{{ 'humidity' in value_json }}\"" >> $s_f
+	echo "          payload_available: \"True\"" >> $s_f
+	echo "          payload_not_available: \"False\"" >> $s_f
+	echo "      unit_of_measurement: '%'" >> $s_f
+	echo "      value_template: >-" >> $s_f
+	echo "        {% if value_json.humidity >= 0 and value_json.humidity <= 100 %}" >> $s_f
+	echo "          {{ value_json.humidity }}" >> $s_f
+	echo "        {% else %}" >> $s_f
+	echo "          {{ states.sensor.${unique_id}_humidity.state }}" >> $s_f
+	echo "        {% endif %}" >> $s_f
 	echo "" >> $s_f
 
 	# Main sensor low battery
 
-	echo "  # $name Sensor" >> $bs_f
-	echo "  - platform: mqtt" >> $bs_f
-	echo "    name: \"$name Sensor Battery Low\"" >> $bs_f
-	echo "    unique_id: \"${unique_id}_sensor_battery_low\"" >> $bs_f
-	echo "    device_class: battery" >> $bs_f
-	echo "    state_topic: \"$topic_base/$id\"" >> $bs_f
-#	echo "    payload_on: \"1\"" >> $bs_f
-#	echo "    payload_off: \"0\"" >> $bs_f
-	echo "    payload_on: \"0\"" >> $bs_f
-	echo "    payload_off: \"1\"" >> $bs_f
-	echo "    value_template: >-" >> $bs_f
-#	echo "      {% if value_json.battery_low == 0 or value_json.battery_low == 1 %}" >> $bs_f
-#	echo "        {{ value_json.battery_low }}" >> $bs_f
-#	echo "      {% else %}" >> $bs_f
-#	echo "        {{ states.sensor.${unique_id}_battery_low.state }}" >> $bs_f
-	echo "      {% if value_json.battery_ok == 1 or value_json.battery_ok == 0 %}" >> $bs_f
-	echo "        {{ value_json.battery_ok }}" >> $bs_f
-	echo "      {% else %}" >> $bs_f
-	echo "        {{ states.sensor.${unique_id}_battery_ok.state }}" >> $bs_f
-	echo "      {% endif %}" >> $bs_f
+	# MQTT no longer uses "platform" line
+	echo "     # $name Sensor" >> $bs_f
+	echo "    - name: \"$name Sensor Battery Low\"" >> $bs_f
+	echo "      unique_id: \"${unique_id}_sensor_battery_low\"" >> $bs_f
+	echo "      device_class: battery" >> $bs_f
+	echo "      state_topic: \"$topic_base/$id\"" >> $bs_f
+#	echo "      payload_on: \"1\"" >> $bs_f
+#	echo "      payload_off: \"0\"" >> $bs_f
+	echo "      payload_on: \"0\"" >> $bs_f
+	echo "      payload_off: \"1\"" >> $bs_f
+	echo "      value_template: >-" >> $bs_f
+	echo "        {% if value_json.battery_ok == 1 or value_json.battery_ok == 0 %}" >> $bs_f
+	echo "          {{ value_json.battery_ok }}" >> $bs_f
+	echo "        {% else %}" >> $bs_f
+	echo "          {{ states.sensor.${unique_id}_battery_ok.state }}" >> $bs_f
+	echo "        {% endif %}" >> $bs_f
 	echo "" >> $bs_f
 
 
@@ -154,13 +160,10 @@ do
 	echo "    sensors:" >> $lu_f
 	echo "      ${unique_id}_sensor_age:" >> $lu_f
 	echo "        friendly_name: \"$name Sensor Age\"" >> $lu_f
-#	echo "        entity_id: sensor.time" >> $lu_f
 	echo "        value_template: >-" >> $lu_f
 	echo "          {% if states.sensor.${unique_id}_temperature.last_changed > states.sensor.${unique_id}_humidity.last_changed %}" >> $lu_f
-#	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0) }}" >> $lu_f
 	echo "            {{ (now() - states.sensor.${unique_id}_temperature.last_changed).total_seconds() | round(0,default=0) }}" >> $lu_f
 	echo "          {% else %}" >> $lu_f
-#	echo "            {{ (states.sensor.time.last_changed - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0) }}" >> $lu_f
 	echo "            {{ (now() - states.sensor.${unique_id}_humidity.last_changed).total_seconds() | round(0,default=0) }}" >> $lu_f
 	echo "          {% endif %}" >> $lu_f
 	echo "        unit_of_measurement: \"Seconds\"" >> $lu_f
@@ -169,15 +172,15 @@ do
 
 	# custom signal sensor counter for watchdog or other stat use
 
-	echo "  - platform: mqtt" >> $sn_f
-	echo "    name: \"$name Sensor SNR\"" >> $sn_f
-	echo "    unique_id: \"${unique_id}_sensor_snr\"" >> $sn_f
-	echo "    device_class: signal_strength" >> $sn_f
-	echo "    icon: mdi:signal" >> $sn_f
-	echo "    state_topic: \"$topic_base/$id\"" >> $sn_f
-	echo "    unit_of_measurement: 'dB'" >> $sn_f
-	echo "    value_template: >-" >> $sn_f
-	echo "      {{ value_json.snr }}" >> $sn_f
+	# MQTT no longer uses "platform" line
+	echo "    - name: \"$name Sensor SNR\"" >> $sn_f
+	echo "      unique_id: \"${unique_id}_sensor_snr\"" >> $sn_f
+	echo "      device_class: signal_strength" >> $sn_f
+	echo "      icon: mdi:signal" >> $sn_f
+	echo "      state_topic: \"$topic_base/$id\"" >> $sn_f
+	echo "      unit_of_measurement: 'dB'" >> $sn_f
+	echo "      value_template: >-" >> $sn_f
+	echo "        {{ value_json.snr }}" >> $sn_f
 	echo "" >> $sn_f
 
 done
@@ -187,13 +190,14 @@ echo "Merging generated data into package..."
 
 echo "# Sensor Package File" >> $p_f
 echo "" >> $p_f
-echo "# Temperature and Humidity Reading Sensors" >> $p_f
-echo "sensor:" >> $p_f
+echo "mqtt:" >> $p_f
+echo "  # Temperature and Humidity Reading Sensors" >> $p_f
+echo "  sensor:" >> $p_f
 cat $s_f >> $p_f
 echo "" >> $p_f
 echo "" >> $p_f
-echo "# Battery Low Warning Sensors" >> $p_f
-echo "binary_sensor:" >> $p_f
+echo "  # Battery Low Warning Sensors" >> $p_f
+echo "  binary_sensor:" >> $p_f
 cat $bs_f >> $p_f
 
 echo "# Sensor Filter Package File" >> $fp_f
@@ -210,7 +214,8 @@ cat $lu_f >> $lup_f
 
 echo "# Sensor Signal Package File" >> $snp_f
 echo "" >> $snp_f
-echo "sensor:" >> $snp_f
+echo "mqtt:" >> $snp_f
+echo "  sensor:" >> $snp_f
 echo "" >> $snp_f
 cat $sn_f >> $snp_f
 
